@@ -46,6 +46,7 @@ docs/           # Documentation projet (contexte, notes de rencontres, grille ta
 
 ## Conventions
 
+- **Python :** Toujours exécuter les scripts dans l'environnement virtuel `myenv` (`. ~/myenv/bin/activate` avant d'exécuter)
 - Tout le contenu projet est en **français**
 - Architecture inspirée du repo `vision_opubliq_repensons_levis`
 - Repo lié : `opubliq-platform` (plateforme SaaS réutilisable)
