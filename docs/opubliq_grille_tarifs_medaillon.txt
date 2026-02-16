@@ -1,0 +1,147 @@
+﻿Opubliq
+
+
+Livrable
+	Prix
+	Responsable
+	Recherche, filtrage et validation des organismes selon les critères du projet. Vérification des coordonnées et identification d'organismes manquants.
+	750$
+	Hubert Cadieux
+	Programmation des deux questionnaires distincts (organismes et population), configuration et tests de fonctionnement.
+	1000$
+	Hubert Cadieux
+	Conception de la stratégie d'échantillonnage pour le volet population. Définition des quotas et des méthodes de recrutement pour assurer la représentativité de l'échantillon.
+	2500$
+	Alexandre Bouillon
+	Soutien et coordination pour l'application de la stratégie d'échantillonnage. Support continu pour les ajustements nécessaires pendant la collecte de données (téléphonistes, service CRA, etc.).
+	2500$
+	Alexandre Bouillon
+	Nettoyage des données collectées des deux volets et livraison en format tabulaire (CSV) prêt pour l'analyse.
+	750$
+	Hubert Cadieux
+	Application de la pondération sur le jeu de données nettoyé selon la stratégie d'échantillonnage établie.
+	500$
+	Alexandre Bouillon
+	PowerPoint avec graphiques de base générés à partir des données collectées. Graphiques modifiables permettant à Médaillon d'ajuster la présentation selon leurs besoins.
+	1500$
+	Hubert Cadieux
+	Développement du prototype initial d'une plateforme libre service permettant à Médaillon de programmer (SurveyJS), héberger, déployer et gérer leurs sondages. Interface web pour téléversement de questionnaires, gestion multi-sondages et téléchargement des données. Inclut documentation et formation sur l'utilisation de la plateforme.
+	5500$
+	Hubert Cadieux
+	TOTAL
+	15 000$
+	
+
+	
+
+________________
+
+
+Équipe
+CV complets disponibles sur demande
+Hubert Cadieux
+(438) 825-3958
+hubertcadieux@opubliq.com
+Formation
+* Maîtrise en science politique (Université Laval)
+* Mémoire de maîtrise déposé (disponible sur demande)
+Expérience
+Environics Institute (janvier 2025 - présent)
+* Analyses de données de sondage qui ont produit des rapports de recherche (disponibles sur demande)
+
+
+Musée de la Civilisation (2022 - 2024) :
+* Rédaction de deux rapports marketing basés sur enquêtes de satisfaction (disponibles sur demande)
+
+
+CLESSN (2021 - 2025)
+* Contributions aux projets Datagotchi, Projet Quorum, Polimètre.
+* Collaboration avec partenaires externes (La Presse Canadienne, Office des professions du Québec)
+* Gestion de projets
+* Programmation de sondages et analyses conjointes sur Qualtrics
+* Publication d’articles scientifiques (disponibles sur demande)
+Compétences
+* R et Python
+* Visualisation de données
+* Modélisation prédictive
+* Apprentissage automatique
+* Web scraping
+* Programmation de sondages (Qualtrics, SurveyJS)
+* Hébergement AWS
+Disponibilités
+* 15-35h par semaine, flexible selon échéanciers
+* Indisponible mai-août 2026 (stage)
+________________
+
+
+Nicolas Ebnoether-Noël
+(418) 717-3494
+nebnoethern@gmail.com
+Formation
+* Maîtrise en histoire, Université Laval (2018)
+* La rédaction stratégique IJC-FRA105 (Formation certifiée TELUQ)
+Expérience
+Chargé de projet - Médaillon Groupe Conseils (2016 - présent)
+* Gestion de projets en sondage
+* Analyse de données quantitatives
+* Coordination d’équipes de téléphonistes et d’interviewers
+* Conception et révision de questionnaires de sondage
+* Conception et conseil sur la production de visualisation de données
+* Gestion de budgets de projet
+* Création et présentation de rapports
+* Accompagnement de clients sur l’usage de rapports de sondages
+* Conseil en communication avec les médias
+Responsable des opérations de pointages - Québec Forte et Fière (2025) 
+* Assurer la qualité et l’usage optimal de la base de données de pointage
+* Établir la stratégie du pointage pour chacun des candidats
+* Analyse en continu des données d’opinion publique
+* Soutien et formation aux équipes terrains sur l’usage des outils de pointage 
+Consultant stratégique en données - Québec Forte & Fière et Repensons Lévis (2025) 
+* Conseils et formations en acquisition et usage de données électorales 
+* Analyse de l’opinion publique
+* Conseils stratégiques en communications politiques
+* Analyse de données électorales et socio-démographiques
+Conseiller politique - Cabinet de l’opposition officielle – Ville de Québec (2023-2024) 
+* Recherche et analyse de dossiers politiques locaux dont en matière de logement
+* Rédaction de discours, de notes d’information et de rapports stratégiques
+* Veille médiatique et suivi de l’opinion publique de la ville, des arrondissements et des districts concernant, entre autre, le projet de Tramway de Québec
+Analyste stratégique et recherche – Québec d’Abord (2022-2023) 
+* Croisement de données électorales et socio-démographiques
+* Création et présentation de rapports d’orientation stratégique
+* Analyse cartographique de données socio-économiques
+Disponibilités
+* 10-20h par semaine, flexible selon échéanciers
+* Disponibilités limitées avril-juin 2026 (5-10h flexible)
+
+
+Alexandre Bouillon
+(418) 520-4996
+alexandrebouillon@opubliq.com
+Formation
+* Maîtrise en science politique en cours (Université Laval)
+Expérience
+* Environics Institute (septembre 2025 - présent)
+   * Nettoyage de données de sondages, modèles de régression, rapports Quarto
+
+
+* Radio Canada/OBVIA (2024-2025)
+   * Clustering et catégorisation automatique d’articles
+
+
+* CLESSN (2022 - 2025)
+   * Contributions aux projets Datagotchi, Projet Quorum, Polimètre.
+   * Programmation de sondages sur Qualtrics
+   * Gestion et coordination de projets
+   * Publication d’articles scientifiques (disponibles sur demande)
+
+
+* Polimètres Trudeau/Legault (2022-2023)
+   * Évaluation de la réalisation des promesses gouvernementales
+Compétences
+* R et Python
+* Visualisation de données
+* Clustering
+* Cartographie (QGIS)
+* Programmation de sondages (Qualtrics, SurveyJS)
+Disponibilités
+* 5-15h par semaine, flexible selon échéanciers
