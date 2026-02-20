@@ -44,6 +44,7 @@ NON-PERTINENT — exclure:
 - Services purement récréatifs (camps de jour, piscines, arénas)
 - Lignes téléphoniques générales (911, 811, 211, etc.)
 - Organismes à portée provinciale/nationale sans ancrage local
+- Associations à mission économique ou d'affaires (ex: Association des gens d'affaires — mission économique, pas communautaire/sociale)
 
 Réponds UNIQUEMENT en JSON valide, sans markdown:
 {"pertinent": true/false, "raison": "explication courte"}"""
