@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
-INPUT = Path(__file__).resolve().parent.parent / "data" / "02_bottin_geo_filtre.csv"
+INPUT = Path(__file__).resolve().parent.parent / "data" / "02_bottin_territoire.csv"
 OUTPUT = Path(__file__).resolve().parent.parent / "data" / "03_bottin_llm_filtre.csv"
-CHAMPS_IN = ["nom", "adresse", "description", "telephone", "courriel", "site_web", "territoire", "clientele", "lat", "lng"]
+CHAMPS_IN = ["nom", "adresse", "description", "telephone", "courriel", "site_web", "territoire", "clientele", "categorie_territoire"]
 CHAMPS_OUT = CHAMPS_IN + ["pertinent", "raison"]
 
 API_KEY = os.getenv("GEMINI_API_KEY")
