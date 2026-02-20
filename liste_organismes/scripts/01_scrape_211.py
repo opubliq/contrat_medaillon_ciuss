@@ -10,11 +10,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 BASE_URL = (
     "https://www.211qc.ca/recherche?"
-    "place=Montr%C3%A9al-Est,%20QC,%20Canada"
-    "&lat=45.6320003&lng=-73.5066981"
-    "&sort=name"
+    "lat=45.5608572&lng=-73.5738906"
+    "&serve=1&sort=proximity"
+    "&place=Montr%C3%A9al"
     "&field11=Montr%C3%A9al&field12=Montr%C3%A9al"
-    "&serve=1&field13=Montr%C3%A9al-Est"
+    "&field16=null"
 )
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "data" / "bottin211"
 CHAMPS = ["nom", "adresse", "description", "telephone", "courriel", "site_web", "territoire", "clientele"]
