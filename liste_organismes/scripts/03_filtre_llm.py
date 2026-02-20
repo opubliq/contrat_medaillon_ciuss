@@ -64,6 +64,10 @@ def classify(nom, description, clientele):
     return json.loads(text)
 
 
+def is_429(e):
+    return hasattr(e, "response") and e.response is not None and e.response.status_code == 429
+
+
 def load_input():
     with open(INPUT, encoding="utf-8") as f:
         return list(csv.DictReader(f))
@@ -86,22 +90,52 @@ def main():
         print(f"Mode sample: {len(rows)} organismes sélectionnés\n")
 
     results = []
-    for i, row in enumerate(rows):
+    retries = []  # lignes avec erreur 429 à refaire à la fin
+
+    def process_row(i, row):
         try:
             result = classify(row["nom"], row["description"], row["clientele"])
             row["pertinent"] = result["pertinent"]
             row["raison"] = result["raison"]
         except Exception as e:
-            print(f"  Erreur pour [{row['nom'][:50]}]: {e}")
-            row["pertinent"] = "ERREUR"
-            row["raison"] = str(e)
+            if is_429(e):
+                print(f"  [429] {row['nom'][:50]} — sera retenté à la fin")
+                row["pertinent"] = "429"
+                row["raison"] = "429"
+                retries.append(row)
+            else:
+                print(f"  Erreur pour [{row['nom'][:50]}]: {e}")
+                row["pertinent"] = "ERREUR"
+                row["raison"] = str(e)
+        return row
 
+    for i, row in enumerate(rows):
+        row = process_row(i, row)
         results.append(row)
-        tag = "OUI" if row["pertinent"] is True else "NON" if row["pertinent"] is False else "???"
-        print(f"  [{tag}] {row['nom'][:80]} — {row['raison'][:120]}")
+        tag = "OUI" if row["pertinent"] is True else "NON" if row["pertinent"] is False else f"[{row['pertinent']}]"
+        if row["pertinent"] not in ("429",):
+            print(f"  [{tag}] {row['nom'][:80]} — {row['raison'][:120]}")
 
         if (i + 1) % 14 == 0:
             time.sleep(1)  # rate limit 15 req/min
+
+    # Retry des 429
+    if retries:
+        print(f"\n--- Retry de {len(retries)} organismes avec erreur 429 (attente 60s) ---")
+        time.sleep(60)
+        for i, row in enumerate(retries):
+            try:
+                result = classify(row["nom"], row["description"], row["clientele"])
+                row["pertinent"] = result["pertinent"]
+                row["raison"] = result["raison"]
+            except Exception as e:
+                print(f"  Erreur (retry) pour [{row['nom'][:50]}]: {e}")
+                row["pertinent"] = "ERREUR"
+                row["raison"] = str(e)
+            tag = "OUI" if row["pertinent"] is True else "NON" if row["pertinent"] is False else "???"
+            print(f"  [{tag}] {row['nom'][:80]} — {row['raison'][:120]}")
+            if (i + 1) % 14 == 0:
+                time.sleep(1)
 
     if args.sample > 0:
         pertinents = sum(1 for r in results if r["pertinent"] is True)
@@ -119,11 +153,14 @@ def main():
     total_p = len(pertinents)
     total_np = sum(1 for r in results if r["pertinent"] is False)
     total_err = sum(1 for r in results if r["pertinent"] == "ERREUR")
+    total_429 = sum(1 for r in results if r["pertinent"] == "429")
     print(f"\nTerminé.")
     print(f"  {total_p} pertinents")
     print(f"  {total_np} non-pertinents")
     if total_err:
         print(f"  {total_err} erreurs")
+    if total_429:
+        print(f"  {total_429} non-résolus après retry (429)")
     print(f"  → {OUTPUT}")
 
 
