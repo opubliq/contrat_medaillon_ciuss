@@ -1,0 +1,69 @@
+---
+title: "Mandat CIUSSS de l'Est-de-l'Île-de-Montréal"
+description: "Du 2026-03-01 au 2026-07-01"
+sender:
+  name: "Opubliq"
+  email: "info@opubliq.com"
+  address:
+    street: "2-1040 av. de Bourlamaque"
+    zip: "G1R 2P2"
+    city: "Québec"
+    country: "Canada"
+  exempted: "Exempté de TPS/TVQ en tant que petit fournisseur."
+invoice:
+  number: "2026-001"
+  issued: "2026-03-02"
+  due: "2026-03-12"
+recipient:
+  name: "Médaillon Groupe Conseils"
+#  address:
+#    street: "[Client Street Address]"
+#    zip: "[Client Postal Code]"
+#    city: "[Client City]"
+#    state: "[Client State/Province]"
+#    country: "[Client Country]"
+format:
+  typst:
+    template: "template.typ"
+lang: "en_CA"
+region: "CA"
+papersize: "a4"
+margin:
+  x: "2.5cm"
+  y: "2.5cm"
+mainfont: "Alegreya Sans"
+brand:
+  typography:
+    fonts:
+      - family: Alegreya Sans
+        source: google
+        weight: [400, 700]
+        style: [normal, italic]
+    base:
+      family: "Alegreya Sans"
+      size: 12pt
+    headings:
+      color: "#0d8491"
+---
+
+```{=typst}
+#table(
+  columns: (1fr, auto),
+  rows: 36pt,
+  fill: (col, row) => if row == 0 { luma(240) } else { white },
+  inset: 5pt,
+  align: right,
+  stroke: none,
+
+  // Header
+  [*Description*], [*Montant (CAD)*],
+
+  // Example rows - replace with your actual work
+  [Services de recherche et sondage – Projet CIUSS Est-de-Montréal], [\$15 000.00]
+
+  // Total row
+//  [], [[Total Hours]], [*TOTAL*], [*\$[Total Amount].00*]
+)
+```
+
+50% payable le 12 mars 2026. 50% payable le 12 juin 2026.
