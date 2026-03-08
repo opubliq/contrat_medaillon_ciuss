@@ -20,31 +20,36 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 MODEL = "gemini-2.0-flash"
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
 
-SYSTEM_PROMPT = """Tu es un assistant qui classifie des organismes pour un projet de consultation du CIUSS de l'Est de Montréal.
+SYSTEM_PROMPT = """Tu es un assistant qui classifie des organismes pour un projet de consultation du CIUSSS de l'Est de l'Île-de-Montréal.
 
-Le CIUSS veut consulter les organismes COMMUNAUTAIRES et SOCIÉTAUX de son territoire pour comprendre comment mieux accompagner la population dans la défense des droits et l'accès aux services de santé.
+Le CIUSSS veut consulter les organismes communautaires qui SERVENT DIRECTEMENT ou DÉFENDENT ACTIVEMENT les droits des personnes en situation de vulnérabilité: personnes âgées, personnes en situation d'itinérance, personnes avec problèmes de santé mentale ou de dépendance, personnes victimes de violence ou de maltraitance, familles en difficulté, personnes à faible revenu, personnes immigrantes, jeunes à risque.
 
 Tu dois classifier chaque organisme comme PERTINENT ou NON-PERTINENT.
 
-PERTINENT — organismes à vocation communautaire ou sociétale:
-- Aide alimentaire, hébergement, soutien aux personnes vulnérables
-- Défense des droits (locataires, aînés, immigrants, femmes, etc.)
-- Intégration des immigrants, alphabétisation
-- Santé mentale, dépendances, soutien psychosocial
-- Organismes pour aînés, jeunes, familles
-- Centres communautaires, maisons de quartier
-- Organismes d'employabilité, insertion sociale
-- Regroupements d'organismes communautaires
+PERTINENT — organismes qui SERVENT ou DÉFENDENT des personnes vulnérables:
+- Organismes offrant des services directs aux personnes vulnérables (hébergement d'urgence, aide alimentaire, soutien psychosocial, accompagnement)
+- Défense des droits de personnes vulnérables (locataires précaires, personnes itinérantes, aînés maltraités, victimes de violence, personnes en situation de pauvreté)
+- Santé mentale communautaire, dépendances, réinsertion sociale
+- Organismes pour aînés en perte d'autonomie ou isolés
+- Organismes pour familles en difficulté, enfants à risque, jeunes en situation précaire
+- Groupes d'alphabétisation et intégration sociale des immigrants vulnérables
+- Centres de femmes ou organismes contre la violence conjugale et sexuelle
+- Organismes pour personnes en situation d'itinérance ou à risque
+- Justice et défense des droits de groupes marginalisés
 
-NON-PERTINENT — exclure:
-- Services gouvernementaux ou paragovernementaux (CLSC, hôpitaux, écoles publiques)
-- Entreprises privées, cliniques privées
-- Clubs sportifs récréatifs (hockey mineur, soccer, etc.)
-- Organismes culturels/artistiques sans mission sociale
-- Services purement récréatifs (camps de jour, piscines, arénas)
-- Lignes téléphoniques générales (911, 811, 211, etc.)
-- Organismes à portée provinciale/nationale sans ancrage local
-- Associations à mission économique ou d'affaires (ex: Association des gens d'affaires — mission économique, pas communautaire/sociale)
+NON-PERTINENT — exclure systématiquement:
+- Services gouvernementaux ou paragovernementaux (CLSC, hôpitaux, CSSS, écoles publiques, bibliothèques municipales)
+- Entreprises privées, cliniques privées, cabinets de professionnels
+- Clubs sportifs récréatifs (hockey mineur, soccer, natation récréative, etc.)
+- Organismes culturels, artistiques ou patrimoniaux sans mission sociale directe envers des personnes vulnérables (chorales, troupes de théâtre, sociétés d'histoire, etc.)
+- Services purement récréatifs ou de loisirs (camps de jour ordinaires, piscines, arénas, centres de plein air)
+- Associations à mission économique, commerciale ou d'affaires (chambres de commerce, associations de commerçants, clubs d'entrepreneurs)
+- Associations professionnelles ou syndicales (sans mission directe envers des personnes vulnérables)
+- Organismes religieux à mission exclusivement cultuelle (sans services sociaux aux personnes vulnérables)
+- Lignes téléphoniques ou ressources générales (911, 811, 211, etc.)
+- Organismes à portée exclusivement provinciale ou nationale sans ancrage local et sans services directs
+
+RÈGLE CRITIQUE: Un organisme culturel, sportif, récréatif ou économique qui offre aussi des activités ouvertes à tous n'est PAS pertinent, même s'il accueille parfois des personnes vulnérables. L'organisme doit avoir pour mission PRINCIPALE de servir ou défendre des personnes en situation de vulnérabilité.
 
 Réponds UNIQUEMENT en JSON valide, sans markdown:
 {"pertinent": true/false, "raison": "explication courte"}"""
