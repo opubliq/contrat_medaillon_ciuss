@@ -28,18 +28,16 @@ COULEURS <- c(
 )
 
 LABELS_SECTEUR <- c(
-  aide_alimentaire       = "Aide alimentaire",
-  hebergement_logement   = "Hébergement / logement",
-  sante_mentale          = "Santé mentale",
-  dependances            = "Dépendances",
-  defense_droits         = "Défense des droits",
-  aines                  = "Aînés",
-  jeunes_familles        = "Jeunes et familles",
-  immigrants_integration = "Immigration / intégration",
-  employabilite          = "Employabilité",
-  itinerance             = "Itinérance",
-  handicap_accessibilite = "Handicap / accessibilité",
-  autre                  = "Autre"
+  action_communautaire       = "Action communautaire",
+  aines                      = "Aînés",
+  alimentation               = "Alimentation",
+  education_alphabetisation  = "Éducation / alphabétisation",
+  enfance_jeunesse_famille   = "Enfance, jeunesse et famille",
+  itinerance                 = "Itinérance",
+  justice_defense_droits     = "Justice et défense des droits",
+  sante_mentale_dependances  = "Santé mentale et dépendances",
+  violence_maltraitance      = "Violence et maltraitance",
+  autre                      = "Autre"
 )
 
 LABELS_TERRITOIRE <- c(
