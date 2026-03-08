@@ -91,6 +91,23 @@ def main():
 
     results = []
     retries = []  # lignes avec erreur 429 à refaire à la fin
+    pending_flush = []  # lignes pertinentes en attente d'écriture
+
+    if args.sample == 0:
+        OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+        csv_file = open(OUTPUT, "w", newline="", encoding="utf-8")
+        writer = csv.DictWriter(csv_file, fieldnames=CHAMPS_OUT)
+        writer.writeheader()
+        csv_file.flush()
+    else:
+        csv_file = None
+        writer = None
+
+    def flush_pending():
+        if writer and pending_flush:
+            writer.writerows(pending_flush)
+            csv_file.flush()
+            pending_flush.clear()
 
     def process_row(i, row):
         try:
@@ -115,9 +132,16 @@ def main():
         tag = "OUI" if row["pertinent"] is True else "NON" if row["pertinent"] is False else f"[{row['pertinent']}]"
         if row["pertinent"] not in ("429",):
             print(f"  [{tag}] {row['nom'][:80]} — {row['raison'][:120]}")
+            if row["pertinent"] is True and writer:
+                pending_flush.append(row)
 
         if (i + 1) % 14 == 0:
+            flush_pending()
             time.sleep(1)  # rate limit 15 req/min
+        elif len(pending_flush) >= 10:
+            flush_pending()
+
+    flush_pending()
 
     # Retry des 429
     if retries:
@@ -134,23 +158,25 @@ def main():
                 row["raison"] = str(e)
             tag = "OUI" if row["pertinent"] is True else "NON" if row["pertinent"] is False else "???"
             print(f"  [{tag}] {row['nom'][:80]} — {row['raison'][:120]}")
+            if row["pertinent"] is True and writer:
+                pending_flush.append(row)
             if (i + 1) % 14 == 0:
+                flush_pending()
                 time.sleep(1)
+            elif len(pending_flush) >= 10:
+                flush_pending()
+
+        flush_pending()
+
+    if csv_file:
+        csv_file.close()
 
     if args.sample > 0:
         pertinents = sum(1 for r in results if r["pertinent"] is True)
         print(f"\nSample terminé: {pertinents}/{len(results)} pertinents")
         return
 
-    # Full run: save
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    pertinents = [r for r in results if r["pertinent"] is True]
-    with open(OUTPUT, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=CHAMPS_OUT)
-        writer.writeheader()
-        writer.writerows(pertinents)
-
-    total_p = len(pertinents)
+    total_p = sum(1 for r in results if r["pertinent"] is True)
     total_np = sum(1 for r in results if r["pertinent"] is False)
     total_err = sum(1 for r in results if r["pertinent"] == "ERREUR")
     total_429 = sum(1 for r in results if r["pertinent"] == "429")
