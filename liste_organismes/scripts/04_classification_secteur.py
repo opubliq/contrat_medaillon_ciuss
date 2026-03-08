@@ -155,7 +155,7 @@ def main():
         if row["secteur"] not in ("429",):
             sec = f" / {row['secteur_secondaire']}" if row.get("secteur_secondaire") else ""
             print(f"  [{row['secteur']}{sec}] {row['nom'][:80]}")
-            if writer:
+            if writer and row["secteur"] != "autre":
                 pending_flush.append(row)
 
         if (i + 1) % 14 == 0:
@@ -181,7 +181,7 @@ def main():
                 row["secteur_secondaire"] = ""
             sec = f" / {row['secteur_secondaire']}" if row.get("secteur_secondaire") else ""
             print(f"  [{row['secteur']}{sec}] {row['nom'][:80]}")
-            if writer:
+            if writer and row["secteur"] != "autre":
                 pending_flush.append(row)
             if (i + 1) % 14 == 0:
                 flush_pending()
