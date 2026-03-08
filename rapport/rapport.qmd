@@ -1,0 +1,235 @@
+---
+title: "Organismes communautaires"
+subtitle: "Territoire CIUSSS de l'Est-de-l'Île-de-Montréal"
+date: today
+date-format: "D MMMM YYYY"
+lang: fr
+format:
+  pdf:
+    documentclass: article
+    papersize: letter
+    fontsize: 11pt
+    geometry:
+      - top=28mm
+      - bottom=28mm
+      - left=28mm
+      - right=28mm
+    colorlinks: true
+    linkcolor: "2C5F8A"
+    urlcolor: "2C5F8A"
+    toc: false
+    include-in-header:
+      text: |
+        % Police Lato (sans-serif)
+        \usepackage{fontspec}
+        \setmainfont{Lato}[
+          UprightFont    = *-Regular,
+          BoldFont       = *-Bold,
+          ItalicFont     = *-Italic,
+          BoldItalicFont = *-BoldItalic,
+          Ligatures      = TeX
+        ]
+
+        % Couleurs
+        \usepackage{xcolor}
+        \definecolor{ciussblue}{HTML}{2C5F8A}
+        \definecolor{lightgray}{HTML}{F5F5F5}
+        \definecolor{medgray}{HTML}{888888}
+
+        % Titres de section épurés
+        \usepackage{titlesec}
+        \titleformat{\section}
+          {\large\bfseries\color{ciussblue}}
+          {}{0em}{}
+          [\vspace{2pt}\color{ciussblue}\rule{\linewidth}{0.6pt}\vspace{4pt}]
+        \titlespacing{\section}{0pt}{18pt}{8pt}
+
+        % Tables
+        \usepackage{booktabs}
+        \usepackage{longtable}
+        \usepackage{array}
+
+        % En-tête / pied de page minimalistes
+        \usepackage{fancyhdr}
+        \pagestyle{fancy}
+        \fancyhf{}
+        \fancyhead[L]{\small\color{medgray}Projet Médaillon — Liste préliminaire d'organismes}
+        \fancyfoot[C]{\small\color{medgray}\thepage}
+        \renewcommand{\headrulewidth}{0pt}
+
+        % Interligne des tableaux
+        \renewcommand{\arraystretch}{1.45}
+
+
+
+        % Espacement paragraphes
+        \setlength{\parskip}{5pt}
+        \setlength{\parindent}{0pt}
+execute:
+  echo: false
+  warning: false
+  message: false
+  cache: false
+---
+
+```{r setup}
+library(tidyverse)
+library(kableExtra)
+
+data_dir <- "data"
+
+# Totaux par territoire pour les descriptions inline
+totaux <- read_csv(
+  "../liste_organismes/data/04_bottin_secteurs.csv",
+  show_col_types = FALSE
+) |>
+  filter(pertinent == TRUE | pertinent == "True") |>
+  count(categorie_territoire)
+
+n_total <- function(cat) {
+  totaux |> filter(categorie_territoire == cat) |> pull(n)
+}
+```
+
+# Mise en contexte
+
+Les organismes présentés dans ce document ont été identifiés à partir du répertoire Info-Social 211. Un filtre a été appliqué sur le territoire de desserte, puis sur la pertinence de la mission et de la clientèle par rapport au mandat du CIUSSS de l'Est-de-l'Île-de-Montréal.
+
+Les organismes sont classés selon leur **portée territoriale**, c'est-à-dire la population qu'ils déclarent desservir, et non leur localisation physique. Un organisme dont la portée couvre l'île de Montréal ou le Grand Montréal peut tout à fait être pertinent pour la clientèle du territoire CIUSSS-Est.
+
+- **Local** — dessert spécifiquement les quartiers du territoire CIUSSS-Est
+- **Île de Montréal** — dessert l'ensemble de l'île
+- **Grand Montréal** — dessert Montréal et ses banlieues
+- **Provincial** — dessert l'ensemble du Québec
+
+\newpage
+
+# Vue d'ensemble
+
+```{r graphique-territoire, fig.align="center", out.width="90%"}
+knitr::include_graphics(file.path(data_dir, "graphique_territoire.png"))
+```
+
+```{r graphique-secteurs, fig.align="center", out.width="90%"}
+knitr::include_graphics(file.path(data_dir, "graphique_secteurs.png"))
+```
+
+\newpage
+
+# Organismes locaux
+
+Organismes dont la portée territoriale couvre spécifiquement les quartiers desservis par le CIUSSS de l'Est-de-l'Île-de-Montréal.
+
+```{r table-local}
+table_local <- read_csv(file.path(data_dir, "table_local.csv"),
+                        show_col_types = FALSE)
+
+if (nrow(table_local) == 0) {
+  cat("_Aucun organisme local identifié pour le moment._")
+} else {
+  table_local |>
+    kbl(
+      booktabs  = TRUE,
+      longtable = TRUE,
+      linesep   = "",
+      caption   = paste0("Organismes locaux (n = ", nrow(table_local), ")")
+    ) |>
+    kable_styling(
+      latex_options      = c("repeat_header", "striped"),
+      repeat_header_text = "(suite)",
+      font_size          = 9,
+      stripe_color       = "gray!18"
+    ) |>
+    column_spec(1, width = "5cm") |>
+    column_spec(2, width = "3.5cm") |>
+    column_spec(3, width = "4.5cm") |>
+    column_spec(4, width = "2.5cm")
+}
+```
+
+\newpage
+
+# Organismes — Île de Montréal
+
+Organismes dont la portée couvre l'ensemble de l'île de Montréal. Extrait de 15 organismes sur `r n_total("montreal")` recensés.
+
+```{r table-montreal}
+table_mtl <- read_csv(file.path(data_dir, "table_montreal.csv"),
+                      show_col_types = FALSE)
+
+table_mtl |>
+  kbl(
+    booktabs  = TRUE,
+    longtable = TRUE,
+    linesep   = "",
+    caption   = paste0("Organismes — Île de Montréal (n = ", nrow(table_mtl), ", extrait)")
+  ) |>
+  kable_styling(
+    latex_options      = c("repeat_header", "striped"),
+    repeat_header_text = "(suite)",
+    font_size          = 9,
+    stripe_color       = "gray!18"
+  ) |>
+  column_spec(1, width = "5cm") |>
+  column_spec(2, width = "3.5cm") |>
+  column_spec(3, width = "4.5cm") |>
+  column_spec(4, width = "2.5cm")
+```
+
+\newpage
+
+# Organismes — Grand Montréal
+
+Organismes dont la portée couvre Montréal et ses banlieues. Extrait de 10 organismes sur `r n_total("grand_montreal")` recensés.
+
+```{r table-grand-montreal}
+table_gm <- read_csv(file.path(data_dir, "table_grand_montreal.csv"),
+                     show_col_types = FALSE)
+
+table_gm |>
+  kbl(
+    booktabs  = TRUE,
+    longtable = TRUE,
+    linesep   = "",
+    caption   = paste0("Organismes — Grand Montréal (n = ", nrow(table_gm), ", extrait)")
+  ) |>
+  kable_styling(
+    latex_options      = c("repeat_header", "striped"),
+    repeat_header_text = "(suite)",
+    font_size          = 9,
+    stripe_color       = "gray!18"
+  ) |>
+  column_spec(1, width = "5cm") |>
+  column_spec(2, width = "3.5cm") |>
+  column_spec(3, width = "4.5cm") |>
+  column_spec(4, width = "2.5cm")
+```
+
+\newpage
+
+# Organismes — Provincial
+
+Organismes dont la portée couvre l'ensemble du Québec. Extrait de 10 organismes sur `r n_total("provincial")` recensés.
+
+```{r table-provincial}
+table_prov <- read_csv(file.path(data_dir, "table_provincial.csv"),
+                       show_col_types = FALSE)
+
+table_prov |>
+  kbl(
+    booktabs  = TRUE,
+    longtable = TRUE,
+    linesep   = "",
+    caption   = paste0("Organismes — Provincial (n = ", nrow(table_prov), ", extrait)")
+  ) |>
+  kable_styling(
+    latex_options      = c("repeat_header", "striped"),
+    repeat_header_text = "(suite)",
+    font_size          = 9,
+    stripe_color       = "gray!18"
+  ) |>
+  column_spec(1, width = "5cm") |>
+  column_spec(2, width = "3.5cm") |>
+  column_spec(3, width = "4.5cm") |>
+  column_spec(4, width = "2.5cm")
+```
