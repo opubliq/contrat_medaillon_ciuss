@@ -78,12 +78,22 @@ library(kableExtra)
 
 data_dir <- "data"
 
-# Totaux par territoire pour les descriptions inline
-totaux <- read_csv(
+# Entonnoir : organismes après filtre géo vs après filtre LLM
+n_geo <- read_csv(
+  "../liste_organismes/data/02_bottin_territoire.csv",
+  show_col_types = FALSE
+) |> nrow()
+
+bottin_secteurs <- read_csv(
   "../liste_organismes/data/04_bottin_secteurs.csv",
   show_col_types = FALSE
 ) |>
-  filter(pertinent == TRUE | pertinent == "True") |>
+  filter(pertinent == TRUE | pertinent == "True")
+
+n_retenu <- nrow(bottin_secteurs)
+
+# Totaux par territoire pour les descriptions inline
+totaux <- bottin_secteurs |>
   count(categorie_territoire)
 
 n_total <- function(cat) {
@@ -94,6 +104,8 @@ n_total <- function(cat) {
 # Mise en contexte
 
 Les organismes présentés dans ce document ont été identifiés à partir du répertoire Info-Social 211. Un filtre a été appliqué sur le territoire de desserte, puis sur la pertinence de la mission et de la clientèle par rapport au mandat du CIUSSS de l'Est-de-l'Île-de-Montréal.
+
+Le répertoire 211 comportait `r n_geo` organismes dans le territoire. Après application des filtres de pertinence, `r n_retenu` organismes ont été retenus pour ce rapport.
 
 Les organismes sont classés selon leur **portée territoriale**, c'est-à-dire la population qu'ils déclarent desservir, et non leur localisation physique. Un organisme dont la portée couvre l'île de Montréal ou le Grand Montréal peut tout à fait être pertinent pour la clientèle du territoire CIUSSS-Est.
 
