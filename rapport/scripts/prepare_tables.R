@@ -50,7 +50,6 @@ LABELS_TERRITOIRE <- c(
 # ── Lecture ───────────────────────────────────────────────────────────────────
 
 df <- read_csv(CSV_SOURCE, show_col_types = FALSE) |>
-  filter(pertinent == TRUE | pertinent == "True") |>
   mutate(
     secteur_label = LABELS_SECTEUR[secteur] |> coalesce(secteur),
     territoire_label = LABELS_TERRITOIRE[categorie_territoire] |>
@@ -62,21 +61,23 @@ message(glue::glue("Par territoire :\n{capture.output(count(df, categorie_territ
 
 # ── Colonnes pour les tables ───────────────────────────────────────────────────
 
-cols_table <- c("nom", "secteur_label", "courriel", "telephone")
+cols_table <- c("nom", "description", "secteur_label", "courriel", "telephone")
 
 format_table <- function(data) {
   data |>
     select(all_of(cols_table)) |>
     rename(
-      Organisme = nom,
-      Secteur   = secteur_label,
-      Courriel  = courriel,
-      Téléphone = telephone
+      Organisme   = nom,
+      Description = description,
+      Secteur     = secteur_label,
+      Courriel    = courriel,
+      Téléphone   = telephone
     ) |>
     mutate(
-      Organisme = str_to_title(Organisme),
-      Courriel  = replace_na(Courriel, "—"),
-      Téléphone = replace_na(Téléphone, "—")
+      Organisme   = str_to_title(Organisme),
+      Description = replace_na(Description, "—"),
+      Courriel    = replace_na(Courriel, "—"),
+      Téléphone   = replace_na(Téléphone, "—")
     )
 }
 

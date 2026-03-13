@@ -87,8 +87,7 @@ n_geo <- read_csv(
 bottin_secteurs <- read_csv(
   "../liste_organismes/data/04_bottin_secteurs.csv",
   show_col_types = FALSE
-) |>
-  filter(pertinent == TRUE | pertinent == "True")
+)
 
 n_retenu <- nrow(bottin_secteurs)
 
@@ -105,7 +104,7 @@ n_total <- function(cat) {
 
 Les organismes présentés dans ce document ont été identifiés à partir du répertoire Info-Social 211. Un filtre a été appliqué sur le territoire de desserte, puis sur la pertinence de la mission et de la clientèle par rapport au mandat du CIUSSS de l'Est-de-l'Île-de-Montréal.
 
-Le répertoire 211 comportait `r n_geo` organismes dans le territoire. Après application des filtres de pertinence, `r n_retenu` organismes ont été retenus pour ce rapport.
+Le répertoire 211 comportait `r n_geo` organismes dans le territoire. Après application des filtres territoriaux et de pertinence, `r n_retenu` organismes ont été retenus pour ce rapport. À titre comparatif, la liste précédente comportait 1 641 organismes.
 
 Les organismes sont classés selon leur **portée territoriale**, c'est-à-dire la population qu'ils déclarent desservir, et non leur localisation physique. Un organisme dont la portée couvre l'île de Montréal ou le Grand Montréal peut tout à fait être pertinent pour la clientèle du territoire CIUSSS-Est.
 
@@ -152,10 +151,11 @@ if (nrow(table_local) == 0) {
       font_size          = 9,
       stripe_color       = "gray!18"
     ) |>
-    column_spec(1, width = "5cm") |>
-    column_spec(2, width = "3.5cm") |>
-    column_spec(3, width = "4.5cm") |>
-    column_spec(4, width = "2.5cm")
+    column_spec(1, width = "3.5cm") |>
+    column_spec(2, width = "4.5cm") |>
+    column_spec(3, width = "2.5cm") |>
+    column_spec(4, width = "3cm") |>
+    column_spec(5, width = "2cm")
 }
 ```
 
@@ -182,10 +182,11 @@ table_mtl |>
     font_size          = 9,
     stripe_color       = "gray!18"
   ) |>
-  column_spec(1, width = "5cm") |>
-  column_spec(2, width = "3.5cm") |>
-  column_spec(3, width = "4.5cm") |>
-  column_spec(4, width = "2.5cm")
+  column_spec(1, width = "3.5cm") |>
+  column_spec(2, width = "4.5cm") |>
+  column_spec(3, width = "2.5cm") |>
+  column_spec(4, width = "3cm") |>
+  column_spec(5, width = "2cm")
 ```
 
 \newpage
@@ -211,10 +212,11 @@ table_gm |>
     font_size          = 9,
     stripe_color       = "gray!18"
   ) |>
-  column_spec(1, width = "5cm") |>
-  column_spec(2, width = "3.5cm") |>
-  column_spec(3, width = "4.5cm") |>
-  column_spec(4, width = "2.5cm")
+  column_spec(1, width = "3.5cm") |>
+  column_spec(2, width = "4.5cm") |>
+  column_spec(3, width = "2.5cm") |>
+  column_spec(4, width = "3cm") |>
+  column_spec(5, width = "2cm")
 ```
 
 \newpage
@@ -240,8 +242,9 @@ table_prov |>
     font_size          = 9,
     stripe_color       = "gray!18"
   ) |>
-  column_spec(1, width = "5cm") |>
-  column_spec(2, width = "3.5cm") |>
-  column_spec(3, width = "4.5cm") |>
-  column_spec(4, width = "2.5cm")
+  column_spec(1, width = "3.5cm") |>
+  column_spec(2, width = "4.5cm") |>
+  column_spec(3, width = "2.5cm") |>
+  column_spec(4, width = "3cm") |>
+  column_spec(5, width = "2cm")
 ```

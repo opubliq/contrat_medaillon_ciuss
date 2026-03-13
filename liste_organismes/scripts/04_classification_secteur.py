@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
-INPUT = Path(__file__).resolve().parent.parent / "data" / "02_bottin_territoire.csv"
+INPUT = Path(__file__).resolve().parent.parent / "data" / "03_bottin_pertinent.csv"
 OUTPUT = Path(__file__).resolve().parent.parent / "data" / "04_bottin_secteurs.csv"
 CHAMPS_IN = ["nom", "adresse", "description", "telephone", "courriel", "site_web", "territoire", "clientele", "categorie_territoire"]
 CHAMPS_OUT = CHAMPS_IN + ["secteur", "secteur_secondaire"]
@@ -20,37 +20,61 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 MODEL = "gemini-2.0-flash"
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
 
+# Taxonomie officielle ISQ — Enquête québécoise auprès des organismes d'action communautaire (EQOAC) 2023
+# Source : https://statistique.quebec.ca/fr/fichier/action-communautaire-2023.pdf — pages 79-82
+# Table de référence complète : liste_organismes/ref/taxonomie_isq_eqoac_2023.csv
 TAXONOMIE = [
-    "action_communautaire",
-    "aines",
-    "alimentation",
-    "education_alphabetisation",
-    "enfance_jeunesse_famille",
-    "itinerance",
-    "justice_defense_droits",
-    "sante_mentale_dependances",
-    "violence_maltraitance",
-    "autre",
+    "arts_culture_medias",
+    "bien_etre_alimentaire",
+    "defense_droits",
+    "developpement_communautaire",
+    "developpement_enfants_familles",
+    "education_formation",
+    "emploi",
+    "environnement",
+    "logement",
+    "sante",
+    "soutien_vulnerabilite",
+    "sports_loisirs_tourisme",
+    "autres_missions_sociales",
 ]
 
-SYSTEM_PROMPT = f"""Tu es un assistant qui classifie des organismes communautaires par secteur d'activité pour un projet du CIUSSS de l'Est de Montréal.
+SYSTEM_PROMPT = """Tu es un assistant qui classifie des organismes communautaires par domaine de mission sociale pour un projet du CIUSSS de l'Est de Montréal.
 
-Assigne UN secteur principal obligatoire et optionnellement un deuxième secteur secondaire (laisser vide si aucun ne s'applique clairement).
+Utilise la classification officielle de l'ISQ (Enquête québécoise auprès des organismes d'action communautaire, EQOAC 2023).
 
-Taxonomie autorisée:
-- action_communautaire — centres communautaires, maisons de quartier, regroupements, organismes à vocation générale
-- aines — services spécifiques aux personnes âgées, maintien à domicile, socialisation des aînés
-- alimentation — banques alimentaires, popotes roulantes, cuisines collectives, sécurité alimentaire
-- education_alphabetisation — alphabétisation, francisation, formation de base, raccrochage scolaire
-- enfance_jeunesse_famille — 0-18 ans, famille, enfance, périnatalité, parentalité
-- itinerance — personnes sans domicile fixe, hébergement d'urgence, prévention de l'itinérance
-- justice_defense_droits — défense des droits (locataires, aînés, femmes, usagers, immigrants), accès à la justice
-- sante_mentale_dependances — soutien psychosocial, crise, rétablissement, alcool, drogues, jeu
-- violence_maltraitance — violence conjugale, agressions sexuelles, maltraitance des aînés, protection
-- autre — ne rentre dans aucune catégorie ci-dessus
+Assigne UN domaine principal obligatoire et optionnellement un domaine secondaire (laisser vide si aucun ne s'applique clairement).
+
+Domaines autorisés (code : libellé officiel — description et exemples) :
+
+- arts_culture_medias : Arts, culture et médias — Favoriser l'accès et la participation à l'art, à la culture et aux médias d'information. Ex. : arts visuels, théâtre, musique, chant choral, cinéma, journal local, radio communautaire, médias en ligne.
+
+- bien_etre_alimentaire : Bien-être alimentaire — Œuvrer au bien-être et à la sécurité alimentaire. Ex. : repas à domicile, cuisines collectives, banques alimentaires, popotes roulantes, épiceries solidaires.
+
+- defense_droits : Défense des droits — Promouvoir et défendre les droits et les intérêts de la population ou de groupes particuliers ; éducation populaire autonome ; mobilisation sociale. Ex. : droits des locataires, femmes, LGBTQ+, prestataires, personnes judiciarisées, aide juridique.
+
+- developpement_communautaire : Développement communautaire — Améliorer les conditions de vie ou la vitalité d'un quartier ou territoire ; favoriser le sentiment d'appartenance, la concertation, la lutte contre la pauvreté et l'exclusion sociale. Ex. : maisons de quartier, tables de concertation, inclusion sociale, développement local.
+
+- developpement_enfants_familles : Développement des enfants et des familles — Favoriser le développement et l'épanouissement des enfants (0-18 ans), des jeunes et des familles ; compétences parentales ; périnatalité. Ex. : haltes-garderies communautaires, aide psychosociale, accompagnement à la naissance, allaitement, relevailles.
+
+- education_formation : Éducation et formation — Éduquer, enseigner et former ; améliorer les compétences de base ; lutter contre le décrochage scolaire ; éducation populaire citoyenne. Ex. : alphabétisation, francisation, aide aux devoirs, formation professionnelle.
+
+- emploi : Emploi — Favoriser l'insertion sociale et socioprofessionnelle des personnes éloignées du marché du travail. Ex. : préparation à l'emploi, aide à la recherche ou au maintien en emploi, habiletés sociales, personnes handicapées.
+
+- environnement : Environnement — Préserver ou protéger l'environnement ; favoriser une société écoresponsable. Ex. : milieux naturels, récupération, recyclage, développement durable, transport collectif.
+
+- logement : Logement — Favoriser l'accès à un logement ; offrir des services relatifs à l'habitation ; favoriser la cohésion dans les logements sociaux. Ex. : logement social et communautaire, accompagnement, référencement, gestion de conflits entre locataires.
+
+- sante : Santé — Favoriser la santé physique ou mentale de la population ou de clientèles particulières ; soutien aux proches aidants ; soins et ressources en santé. Ex. : personnes aînées ou en perte d'autonomie, troubles mentaux, déficience intellectuelle, réadaptation, aide à domicile, répit aux proches aidants.
+
+- soutien_vulnerabilite : Soutien aux personnes en situation de vulnérabilité — Favoriser les capacités d'agir des personnes vulnérables ; prévention et accompagnement. Ex. : isolement social, personnes en crise, victimes de violence conjugale ou sexuelle, itinérance, dépendances (alcool, drogues, jeu).
+
+- sports_loisirs_tourisme : Sports, loisirs et tourisme — Favoriser l'accès aux sports, aux loisirs et au tourisme. Ex. : installations sportives, activités sportives ou culturelles amateurs, ateliers, camps de vacances.
+
+- autres_missions_sociales : Autres missions sociales — Toute mission ne s'apparentant à aucun des 12 domaines ci-dessus. Inclut aussi : intégration des immigrants et réfugiés, coopération internationale, prévention de la criminalité, promotion du bénévolat.
 
 Réponds UNIQUEMENT en JSON valide, sans markdown:
-{{"secteur": "nom_du_secteur", "secteur_secondaire": "nom_ou_vide"}}"""
+{"secteur": "code_du_domaine", "secteur_secondaire": "code_ou_vide"}"""
 
 
 def classify(nom, description, clientele):
@@ -67,7 +91,7 @@ def classify(nom, description, clientele):
     result = json.loads(text)
     # Valider que le secteur est dans la taxonomie
     if result.get("secteur") not in TAXONOMIE:
-        result["secteur"] = "autre"
+        result["secteur"] = "autres_missions_sociales"
     if result.get("secteur_secondaire") and result["secteur_secondaire"] not in TAXONOMIE:
         result["secteur_secondaire"] = ""
     return result
@@ -155,7 +179,7 @@ def main():
         if row["secteur"] not in ("429",):
             sec = f" / {row['secteur_secondaire']}" if row.get("secteur_secondaire") else ""
             print(f"  [{row['secteur']}{sec}] {row['nom'][:80]}")
-            if writer and row["secteur"] != "autre":
+            if writer and row["secteur"] not in ("ERREUR", "429"):
                 pending_flush.append(row)
 
         if (i + 1) % 14 == 0:
@@ -181,7 +205,7 @@ def main():
                 row["secteur_secondaire"] = ""
             sec = f" / {row['secteur_secondaire']}" if row.get("secteur_secondaire") else ""
             print(f"  [{row['secteur']}{sec}] {row['nom'][:80]}")
-            if writer and row["secteur"] != "autre":
+            if writer and row["secteur"] not in ("ERREUR", "429"):
                 pending_flush.append(row)
             if (i + 1) % 14 == 0:
                 flush_pending()
