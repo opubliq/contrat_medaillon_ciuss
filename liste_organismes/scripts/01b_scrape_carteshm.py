@@ -47,7 +47,7 @@ def scrape():
             "telephone": place.get("phone", ""),
             "courriel": place.get("email", ""),
             "site_web": place.get("website", ""),
-            "territoire": "",
+            "territoire": "Hochelaga-Maisonneuve",
             "clientele": ""
         })
 
