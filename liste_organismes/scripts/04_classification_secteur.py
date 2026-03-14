@@ -14,7 +14,7 @@ load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 INPUT = Path(__file__).resolve().parent.parent / "data" / "03_bottin_pertinent.csv"
 OUTPUT = Path(__file__).resolve().parent.parent / "data" / "04_bottin_secteurs.csv"
 CHAMPS_IN = ["nom", "adresse", "description", "telephone", "courriel", "site_web", "territoire", "clientele", "categorie_territoire"]
-CHAMPS_OUT = CHAMPS_IN + ["secteur", "secteur_secondaire"]
+CHAMPS_OUT = CHAMPS_IN + ["secteur", "secteur_secondaire", "exclu"]
 
 API_KEY = os.getenv("GEMINI_API_KEY")
 MODEL = "gemini-2.0-flash"
@@ -23,6 +23,11 @@ API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:gene
 # Taxonomie officielle ISQ — Enquête québécoise auprès des organismes d'action communautaire (EQOAC) 2023
 # Source : https://statistique.quebec.ca/fr/fichier/action-communautaire-2023.pdf — pages 79-82
 # Table de référence complète : liste_organismes/ref/taxonomie_isq_eqoac_2023.csv
+CATEGORIES_A_EXCLURE = [
+    "sports_loisirs_tourisme",
+    "arts_culture_medias",
+    "environnement",
+]
 TAXONOMIE = [
     "arts_culture_medias",
     "bien_etre_alimentaire",
@@ -129,6 +134,9 @@ def main():
     rows = load_input()
     print(f"{len(rows)} organismes chargés depuis {INPUT.name}")
 
+    rows = [r for r in rows if r.get("pertinent") == "oui"]
+    print(f"{len(rows)} organismes retenus (pertinent == oui)")
+
     rows = deduplicate(rows)
     print(f"{len(rows)} organismes après déduplication sur nom")
 
@@ -161,6 +169,11 @@ def main():
             result = classify(row["nom"], row["description"], row["clientele"])
             row["secteur"] = result["secteur"]
             row["secteur_secondaire"] = result.get("secteur_secondaire", "")
+            if row["secteur"] in CATEGORIES_A_EXCLURE or row["secteur_secondaire"] in CATEGORIES_A_EXCLURE:
+                row["exclu"] = "oui"
+            else:
+                row["exclu"] = "non"
+
         except Exception as e:
             if is_429(e):
                 print(f"  [429] {row['nom'][:50]} — sera retenté à la fin")
@@ -241,6 +254,11 @@ def main():
         print(f"\n  {total_err} erreurs")
     if total_429:
         print(f"  {total_429} non-résolus après retry (429)")
+
+    total_exclus = sum(1 for r in results if r.get("exclu") == "oui")
+    if total_exclus:
+        print(f"  {total_exclus} organismes exclus (sports, arts, environnement)")
+
     print(f"\n  → {OUTPUT}")
 
 
