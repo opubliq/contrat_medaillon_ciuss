@@ -18,7 +18,8 @@ import re
 import unicodedata
 from pathlib import Path
 
-INPUT_DIR = Path(__file__).resolve().parent.parent / "data" / "bottin211"
+INPUT_DIR_211 = Path(__file__).resolve().parent.parent / "data" / "bottin211"
+INPUT_CARTESHM = Path(__file__).resolve().parent.parent / "data" / "carteshm" / "organismes.csv"
 OUTPUT = Path(__file__).resolve().parent.parent / "data" / "02_bottin_territoire.csv"
 
 CHAMPS = [
@@ -103,6 +104,10 @@ def categorize(territoire: str) -> str:
     if contains_any(t_norm, LOCAL_TERMS):
         return "local"
 
+    # 2. Hochelaga-Maisonneuve — spécifique pour carteshm
+    if "hochelaga-maisonneuve" in t_norm:
+        return "hochelaga-maisonneuve"
+
     # 2. Grand Montréal explicite
     if "grand montreal" in t_norm or "grand montréal" in normalize(territoire):
         return "grand_montreal"
@@ -129,12 +134,21 @@ def categorize(territoire: str) -> str:
 
 def load_all_pages() -> list[dict]:
     rows = []
-    for f in sorted(INPUT_DIR.glob("page_*.csv")):
+    # 1. Bottin 211
+    for f in sorted(INPUT_DIR_211.glob("page_*.csv")):
         with open(f, encoding="utf-8") as fh:
             reader = csv.DictReader(fh)
             for row in reader:
                 if row.get("nom") and row["nom"] != "void":
                     rows.append(row)
+    
+    # 2. Cartes HM
+    with open(INPUT_CARTESHM, encoding="utf-8") as fh:
+        reader = csv.DictReader(fh)
+        for row in reader:
+            if row.get("nom") and row["nom"] != "void":
+                rows.append(row)
+                
     return rows
 
 
@@ -159,7 +173,7 @@ def main():
         writer.writerows(output_rows)
 
     print(f"\nDécompte par catégorie_territoire :")
-    for cat in ("local", "montreal", "grand_montreal", "provincial", "void"):
+    for cat in ("local", "hochelaga-maisonneuve", "montreal", "grand_montreal", "provincial", "void"):
         n = counts.get(cat, 0)
         print(f"  {cat:<20} {n:>5}")
     print(f"  {'TOTAL':<20} {sum(counts.values()):>5}")

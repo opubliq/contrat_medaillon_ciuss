@@ -28,16 +28,19 @@ COULEURS <- c(
 )
 
 LABELS_SECTEUR <- c(
-  action_communautaire       = "Action communautaire",
-  aines                      = "Aînés",
-  alimentation               = "Alimentation",
-  education_alphabetisation  = "Éducation / alphabétisation",
-  enfance_jeunesse_famille   = "Enfance, jeunesse et famille",
-  itinerance                 = "Itinérance",
-  justice_defense_droits     = "Justice et défense des droits",
-  sante_mentale_dependances  = "Santé mentale et dépendances",
-  violence_maltraitance      = "Violence et maltraitance",
-  autre                      = "Autre"
+  arts_culture_medias              = "Arts, culture et médias",
+  bien_etre_alimentaire            = "Bien-être alimentaire",
+  defense_droits                   = "Défense des droits",
+  developpement_communautaire      = "Développement communautaire",
+  developpement_enfants_familles   = "Développement des enfants et des familles",
+  education_formation              = "Éducation et formation",
+  emploi                           = "Emploi",
+  environnement                    = "Environnement",
+  logement                         = "Logement",
+  sante                            = "Santé",
+  soutien_vulnerabilite            = "Soutien aux personnes en situation de vulnérabilité",
+  sports_loisirs_tourisme          = "Sports, loisirs et tourisme",
+  autres_missions_sociales         = "Autres missions sociales"
 )
 
 LABELS_TERRITOIRE <- c(
@@ -148,25 +151,29 @@ ggsave(file.path(OUT_DIR, "graphique_territoire.png"), g1,
 
 g2 <- df |>
   count(secteur_label) |>
-  mutate(secteur_label = fct_reorder(secteur_label, n)) |>
+  mutate(secteur_label = fct_reorder(secteur_label, n) |>
+           fct_relabel(~ str_wrap(.x, width = 30))) |>
   ggplot(aes(x = n, y = secteur_label)) +
   geom_col(width = 0.65, fill = "#2C5F8A") +
   geom_text(aes(label = n), hjust = -0.3, size = 3.5) +
   scale_x_continuous(expand = expansion(mult = c(0, 0.15))) +
   labs(
-    title = "Organismes retenus par secteur d'activité",
+    title    = "Organismes retenus par secteur d'activité",
+    subtitle = "Classification ISQ — Enquête québécoise auprès des organismes\nd'action communautaire (EQOAC 2023)",
     x = "Nombre d'organismes",
     y = NULL
   ) +
   theme_minimal(base_size = 12) +
   theme(
     plot.title    = element_text(face = "bold", size = 13),
+    plot.subtitle = element_text(size = 9, color = "#888888", margin = margin(b = 8)),
     panel.grid.major.y = element_blank(),
-    panel.grid.minor   = element_blank()
+    panel.grid.minor   = element_blank(),
+    axis.text.y   = element_text(lineheight = 0.85)
   )
 
 ggsave(file.path(OUT_DIR, "graphique_secteurs.png"), g2,
-       width = 7, height = 5, dpi = 150)
+       width = 8, height = 6.5, dpi = 150)
 
 message("Graphiques PNG générés.")
 message("Prêt pour quarto render.")

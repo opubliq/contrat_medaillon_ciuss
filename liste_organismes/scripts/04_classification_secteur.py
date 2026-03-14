@@ -122,6 +122,29 @@ def deduplicate(rows):
     return deduped
 
 
+def process_row(row, retries):
+    try:
+        result = classify(row["nom"], row["description"], row["clientele"])
+        row["secteur"] = result["secteur"]
+        row["secteur_secondaire"] = result.get("secteur_secondaire", "")
+        if row["secteur"] in CATEGORIES_A_EXCLURE or row["secteur_secondaire"] in CATEGORIES_A_EXCLURE:
+            row["exclu"] = "oui"
+        else:
+            row["exclu"] = "non"
+
+    except Exception as e:
+        if is_429(e):
+            print(f"  [429] {row['nom'][:50]} — sera retenté à la fin")
+            row["secteur"] = "429"
+            row["secteur_secondaire"] = ""
+            retries.append(row)
+        else:
+            print(f"  Erreur pour [{row['nom'][:50]}]: {e}")
+            row["secteur"] = "ERREUR"
+            row["secteur_secondaire"] = ""
+    return row
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sample", type=int, default=0, help="Nombre d'orgs random à tester")
@@ -164,30 +187,8 @@ def main():
             csv_file.flush()
             pending_flush.clear()
 
-    def process_row(i, row):
-        try:
-            result = classify(row["nom"], row["description"], row["clientele"])
-            row["secteur"] = result["secteur"]
-            row["secteur_secondaire"] = result.get("secteur_secondaire", "")
-            if row["secteur"] in CATEGORIES_A_EXCLURE or row["secteur_secondaire"] in CATEGORIES_A_EXCLURE:
-                row["exclu"] = "oui"
-            else:
-                row["exclu"] = "non"
-
-        except Exception as e:
-            if is_429(e):
-                print(f"  [429] {row['nom'][:50]} — sera retenté à la fin")
-                row["secteur"] = "429"
-                row["secteur_secondaire"] = ""
-                retries.append(row)
-            else:
-                print(f"  Erreur pour [{row['nom'][:50]}]: {e}")
-                row["secteur"] = "ERREUR"
-                row["secteur_secondaire"] = ""
-        return row
-
     for i, row in enumerate(rows):
-        row = process_row(i, row)
+        row = process_row(row, retries)
         results.append(row)
         if row["secteur"] not in ("429",):
             sec = f" / {row['secteur_secondaire']}" if row.get("secteur_secondaire") else ""
