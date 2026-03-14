@@ -24,7 +24,7 @@ class TestFilters(unittest.TestCase):
             "description": "Un organisme du CIUSSS",
             "courriel": "test@ssss.gouv.qc.ca",
         }
-        processed_org = module_03.process_row(0, org)
+        processed_org = module_03.process_row(0, org, [])
         self.assertEqual(processed_org["pertinent"], "non")
         self.assertEqual(processed_org["raison"], "Courriel @ssss.gouv.qc.ca — entité gouvernementale CIUSSS/CISSS hors scope")
 
@@ -34,7 +34,7 @@ class TestFilters(unittest.TestCase):
             "description": "Un organisme sans courriel",
             "courriel": "",
         }
-        processed_org = module_03.process_row(0, org)
+        processed_org = module_03.process_row(0, org, [])
         self.assertEqual(processed_org["pertinent"], "non")
         self.assertEqual(processed_org["raison"], "Courriel manquant")
 
@@ -77,7 +77,7 @@ class TestFilters(unittest.TestCase):
                 mock_classify.return_value = {"secteur": "soutien_vulnerabilite", "secteur_secondaire": ""}
 
                 # Simulate the pipeline
-                processed_org_03 = module_03.process_row(0, org)
+                processed_org_03 = module_03.process_row(0, org, [])
 
                 if processed_org_03["pertinent"] == "oui":
                     processed_org_04 = module_04.process_row(processed_org_03, [])
@@ -87,7 +87,7 @@ class TestFilters(unittest.TestCase):
                     else:
                         # If not excluded by category, it should be excluded by the LLM in step 3
                         mock_filter_org.return_value = ("non", "Mocked reason")
-                        processed_org_03 = module_03.process_row(0, org)
+                        processed_org_03 = module_03.process_row(0, org, [])
                         self.assertEqual(processed_org_03["pertinent"], "non")
                 else:
                     self.assertEqual(processed_org_03["pertinent"], "non")

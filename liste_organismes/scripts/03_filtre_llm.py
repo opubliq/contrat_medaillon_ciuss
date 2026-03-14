@@ -110,6 +110,32 @@ def deduplicate(rows):
     return deduped
 
 
+def process_row(i, row, retries):
+    if not row.get("courriel", "").strip():
+        row["pertinent"] = "non"
+        row["raison"] = "Courriel manquant"
+        return row
+    if "@ssss.gouv.qc.ca" in row.get("courriel", "").strip().lower():
+        row["pertinent"] = "non"
+        row["raison"] = "Courriel @ssss.gouv.qc.ca — entité gouvernementale CIUSSS/CISSS hors scope"
+        return row
+    try:
+        pertinent, raison = filter_org(row["nom"], row["description"], row.get("clientele", ""))
+        row["pertinent"] = pertinent
+        row["raison"] = raison
+    except Exception as e:
+        if is_429(e):
+            print(f"  [429] {row['nom'][:50]} — sera retenté à la fin")
+            row["pertinent"] = "429"
+            row["raison"] = ""
+            retries.append(row)
+        else:
+            print(f"  Erreur pour [{row['nom'][:50]}]: {e}")
+            row["pertinent"] = "ERREUR"
+            row["raison"] = str(e)
+    return row
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sample", type=int, default=0, help="Nombre d'orgs random à tester")
@@ -151,34 +177,9 @@ def main():
             writer.writerows(pending_flush)
             csv_file.flush()
             pending_flush.clear()
-
-    def process_row(i, row):
-        if not row.get("courriel", "").strip():
-            row["pertinent"] = "non"
-            row["raison"] = "Courriel manquant"
-            return row
-        if "@ssss.gouv.qc.ca" in row.get("courriel", "").strip().lower():
-            row["pertinent"] = "non"
-            row["raison"] = "Courriel @ssss.gouv.qc.ca — entité gouvernementale CIUSSS/CISSS hors scope"
-            return row
-        try:
-            pertinent, raison = filter_org(row["nom"], row["description"], row.get("clientele", ""))
-            row["pertinent"] = pertinent
-            row["raison"] = raison
-        except Exception as e:
-            if is_429(e):
-                print(f"  [429] {row['nom'][:50]} — sera retenté à la fin")
-                row["pertinent"] = "429"
-                row["raison"] = ""
-                retries.append(row)
-            else:
-                print(f"  Erreur pour [{row['nom'][:50]}]: {e}")
-                row["pertinent"] = "ERREUR"
-                row["raison"] = str(e)
-        return row
     
     for i, row in enumerate(rows):
-        row = process_row(i, row)
+        row = process_row(i, row, retries)
         results.append(row)
         if row["pertinent"] not in ("429",):
             label = "OUI" if row["pertinent"] == "oui" else "NON"
