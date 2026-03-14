@@ -36,6 +36,8 @@ EXCLUSIONS ABSOLUES — réponds toujours "non" si l'organisme est :
 - Un organisme gouvernemental ou para-public : commissaire aux plaintes, comité d'usagers d'un établissement public, agence gouvernementale.
 Un organisme communautaire ACCOMPAGNE ou DÉFEND des personnes vulnérables — il n'est pas lui-même l'institution qui les héberge ou les traite. Si l'organisme EST l'institution (même si sa clientèle est vulnérable), c'est "non".
 
+EXCLUSION LOGEMENT : réponds "non" si l'organisme est un gestionnaire d'immeubles, une coopérative d'habitation (COOP HLM) ou une résidence (ex: 'Habitations XYZ', 'Coopérative ABC'), et que sa mission principale n'est PAS l'accompagnement social ou le soutien direct de personnes vulnérables. La simple offre de logement n'est pas un service direct pour ce projet.
+
 DISTINCTION CLÉ : SERVICES DIRECTS vs LOISIRS/SPORTS
 La mission de l'organisme doit être centrée sur des services directs (ex: santé, services sociaux, accompagnement, défense de droits) aux populations vulnérables.
 Réponds "non" si l'organisme est principalement un club de loisirs, une association sportive ou un organisme culturel, même si sa clientèle inclut des personnes aînées ou handicapées.
