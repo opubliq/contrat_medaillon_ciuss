@@ -36,6 +36,11 @@ EXCLUSIONS ABSOLUES — réponds toujours "non" si l'organisme est :
 - Un organisme gouvernemental ou para-public : commissaire aux plaintes, comité d'usagers d'un établissement public, agence gouvernementale.
 Un organisme communautaire ACCOMPAGNE ou DÉFEND des personnes vulnérables — il n'est pas lui-même l'institution qui les héberge ou les traite. Si l'organisme EST l'institution (même si sa clientèle est vulnérable), c'est "non".
 
+DISTINCTION CLÉ : SERVICES DIRECTS vs LOISIRS/SPORTS
+La mission de l'organisme doit être centrée sur des services directs (ex: santé, services sociaux, accompagnement, défense de droits) aux populations vulnérables.
+Réponds "non" si l'organisme est principalement un club de loisirs, une association sportive ou un organisme culturel, même si sa clientèle inclut des personnes aînées ou handicapées.
+Exemples d'exclusion : centres de loisirs généraux, clubs sportifs, organismes culturels.
+
 RÈGLE PRINCIPALE : réponds "oui" si et seulement si, après avoir vérifié les exclusions ci-dessus, le nom, la description OU la clientèle de l'organisme mentionne EXPLICITEMENT une population vulnérable ou une mission de défense de droits.
 
 Populations vulnérables (suffisent à elles seules pour répondre "oui") :
