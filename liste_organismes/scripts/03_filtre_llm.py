@@ -31,7 +31,12 @@ API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:gene
 
 SYSTEM_PROMPT = """Tu es un assistant qui évalue la pertinence d'organismes communautaires pour un projet du CIUSSS de l'Est de Montréal.
 
-RÈGLE UNIQUE : réponds "oui" si et seulement si le nom, la description OU la clientèle de l'organisme mentionne EXPLICITEMENT une population vulnérable ou une mission de défense de droits. Peu importe le type d'organisme (transport, justice, sport, culture, etc.) : si une population vulnérable est nommée explicitement, c'est "oui". Si ce n'est pas explicitement mentionné, c'est "non".
+EXCLUSIONS ABSOLUES — réponds toujours "non" si l'organisme est :
+- Un établissement de santé ou d'hébergement institutionnel, qu'il soit public ou privé : CIUSSS, CISSS, hôpital, CHSLD, centre de réadaptation, résidence privée pour aînés (RPA), clinique, centre hospitalier.
+- Un organisme gouvernemental ou para-public : commissaire aux plaintes, comité d'usagers d'un établissement public, agence gouvernementale.
+Un organisme communautaire ACCOMPAGNE ou DÉFEND des personnes vulnérables — il n'est pas lui-même l'institution qui les héberge ou les traite. Si l'organisme EST l'institution (même si sa clientèle est vulnérable), c'est "non".
+
+RÈGLE PRINCIPALE : réponds "oui" si et seulement si, après avoir vérifié les exclusions ci-dessus, le nom, la description OU la clientèle de l'organisme mentionne EXPLICITEMENT une population vulnérable ou une mission de défense de droits.
 
 Populations vulnérables (suffisent à elles seules pour répondre "oui") :
 - Aînés, personnes âgées
@@ -144,6 +149,10 @@ def process_row(i, row):
     if not row.get("courriel", "").strip():
         row["pertinent"] = "non"
         row["raison"] = "Courriel manquant"
+        return row
+    if "@ssss.gouv.qc.ca" in row.get("courriel", "").strip().lower():
+        row["pertinent"] = "non"
+        row["raison"] = "Courriel @ssss.gouv.qc.ca — entité gouvernementale CIUSSS/CISSS hors scope"
         return row
     try:
         pertinent, raison = filter_org(row["nom"], row["description"], row.get("clientele", ""))
