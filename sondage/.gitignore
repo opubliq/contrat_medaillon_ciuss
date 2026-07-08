@@ -1,8 +1,7 @@
 # Données brutes et nettoyées (sensibles - CIUSSS)
 data/
 
-# Sorties générées des rapports (gardent seulement les sources .Rmd/.R)
-rapports/*.pdf
+# Sorties générées des rapports (le PDF final est versionné, le reste non)
 rapports/*_files/
 rapports/*.html
 rapports/*.docx

@@ -14,12 +14,13 @@ library(readr)
 library(jsonlite)
 library(purrr)
 
-# Ce script suppose que le répertoire de travail R est la racine du projet
-# (le dossier contenant data/ et scripts/).
+# Les données vivent hors du repo, sur le drive partagé Google Opubliq
+# (accès restreint, données de sondage sensibles).
+data_dir <- "G:/My Drive/_SharedFolder_CUCI-Est-de-Montréal/data"
 
-chemin_internet   <- "data/organismes/sondage_c4504161-d6d4-439d-8203-1e5aabf3b7ad_reponses.xlsx"
-chemin_telephone  <- "data/organismes/sondage_1bf3ef5c-c052-4e13-be00-e2f6d6dd33d2_reponses.xlsx"
-chemin_sortie_dir <- "data/organismes/clean"
+chemin_internet   <- file.path(data_dir, "organismes/sondage_c4504161-d6d4-439d-8203-1e5aabf3b7ad_reponses.xlsx")
+chemin_telephone  <- file.path(data_dir, "organismes/sondage_1bf3ef5c-c052-4e13-be00-e2f6d6dd33d2_reponses.xlsx")
+chemin_sortie_dir <- file.path(data_dir, "organismes/clean")
 
 dir.create(chemin_sortie_dir, showWarnings = FALSE, recursive = TRUE)
 

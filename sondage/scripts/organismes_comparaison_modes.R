@@ -2,8 +2,8 @@
 # Question : mêmes tendances entre modes, ou effet particulier du téléphone
 # (ex. désirabilité sociale liée à la présence d'un.e intervieweur.e) ?
 #
-# Ce script suppose que le répertoire de travail R est la racine du projet
-# et que scripts/organismes_cleaning.R a déjà été exécuté.
+# Suppose que scripts/organismes_cleaning.R a déjà été exécuté.
+# Les données vivent hors du repo, sur le drive partagé Google Opubliq.
 
 library(dplyr)
 library(readr)
@@ -11,7 +11,8 @@ library(tidyr)
 library(stringr)
 library(purrr)
 
-dossier_clean <- "data/organismes/clean"
+data_dir <- "G:/My Drive/_SharedFolder_CUCI-Est-de-Montréal/data"
+dossier_clean <- file.path(data_dir, "organismes/clean")
 combine <- read_csv(file.path(dossier_clean, "organismes_combined.csv"), show_col_types = FALSE)
 
 # --- Variables ordinales à 4 niveaux (recodées 1-4) : test de Wilcoxon -------

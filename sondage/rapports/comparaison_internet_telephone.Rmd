@@ -18,7 +18,8 @@ library(stringr)
 library(ggplot2)
 library(knitr)
 
-dossier_clean <- "../data/organismes/clean"
+data_dir <- "G:/My Drive/_SharedFolder_CUCI-Est-de-Montréal/data"
+dossier_clean <- file.path(data_dir, "organismes/clean")
 combine <- read.csv(file.path(dossier_clean, "organismes_combined.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
 dico    <- read.csv(file.path(dossier_clean, "dictionnaire_variables.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
 pv_ordinales <- read.csv(file.path(dossier_clean, "comparaison_modes_ordinales.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
