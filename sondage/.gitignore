@@ -1,0 +1,19 @@
+# Données brutes et nettoyées (sensibles - CIUSSS)
+data/
+
+# Sorties générées des rapports (gardent seulement les sources .Rmd/.R)
+rapports/*.pdf
+rapports/*_files/
+rapports/*.html
+rapports/*.docx
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# Fichiers temporaires Excel/Office
+~$*.xlsx
+~$*.docx
+~$*.csv

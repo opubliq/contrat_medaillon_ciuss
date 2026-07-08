@@ -1,0 +1,357 @@
+---
+title: "Comparaison des réponses — mode internet vs téléphone"
+subtitle: "Consultation sur les droits des usagers du système de santé et des services sociaux — volet organismes communautaires"
+date: "7 juillet 2026"
+output:
+  pdf_document:
+    latex_engine: pdflatex
+geometry: margin=1in
+fontsize: 11pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6.5, fig.height = 2.6)
+
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(knitr)
+
+dossier_clean <- "../data/organismes/clean"
+combine <- read.csv(file.path(dossier_clean, "organismes_combined.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+dico    <- read.csv(file.path(dossier_clean, "dictionnaire_variables.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+pv_ordinales <- read.csv(file.path(dossier_clean, "comparaison_modes_ordinales.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+pv_binaires  <- read.csv(file.path(dossier_clean, "comparaison_modes_binaires.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+cb_attitude  <- read.csv(file.path(dossier_clean, "comparaison_modes_checkbox_attitude.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+cb_profil    <- read.csv(file.path(dossier_clean, "comparaison_modes_checkbox_profil.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+checkbox_tout <- bind_rows(cb_attitude, cb_profil) %>%
+  mutate(choix = ifelse(choix == "other", "Autre", choix))
+
+texte_question <- function(code) dico$texte_question[dico$code == code][1]
+
+# Couleurs fixes (mêmes deux couleurs partout dans le document)
+couleur_internet  <- "#2a78d6"
+couleur_telephone <- "#1baf7a"
+
+theme_rapport <- function() {
+  theme_minimal(base_size = 11) +
+    theme(
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor   = element_blank(),
+      panel.grid.major.x = element_line(color = "#e1e0d9", linewidth = 0.3),
+      axis.text  = element_text(color = "#52514e"),
+      axis.title = element_blank(),
+      legend.position = "top",
+      legend.title = element_blank(),
+      legend.text = element_text(color = "#0b0b0b"),
+      plot.margin = margin(4, 4, 4, 4)
+    )
+}
+
+# --- Légende des codes (recodage numérique -> texte lisible), ordre = ordre du questionnaire
+
+legende <- list(
+  q0    = c("1" = "Oui", "2" = "Non"),
+  q14   = c("1" = "Oui", "2" = "Non"),
+  q15   = c("1" = "Oui", "2" = "Non"),
+  q17   = c("1" = "Oui", "2" = "Non"),
+  q14_1 = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q16   = c("1" = "Oui", "2" = "Non", "9" = "NSP / Autre"),
+  q2    = c("1" = "Jamais", "2" = "Rarement", "3" = "Souvent", "4" = "Très souvent"),
+  q3    = c("4" = "Très grande connaissance", "3" = "Assez grande connaissance",
+            "2" = "Peu de connaissance", "1" = "Pas du tout de connaissance"),
+  q5    = c("4" = "Très respectés", "3" = "Assez respectés",
+            "2" = "Peu respectés", "1" = "Pas du tout respectés"),
+  q11   = c("4" = "Très facile", "3" = "Assez facile",
+            "2" = "Assez difficile", "1" = "Très difficile")
+)
+
+pct_par_mode <- function(code) {
+  lab <- legende[[code]]
+  d <- combine %>% filter(!is.na(.data[[code]])) %>% select(mode, valeur = all_of(code))
+  d %>%
+    mutate(valeur = factor(as.character(valeur), levels = names(lab), labels = unname(lab))) %>%
+    count(mode, valeur, name = "n") %>%
+    group_by(mode) %>%
+    mutate(pct = 100 * n / sum(n), n_total_mode = sum(n)) %>%
+    ungroup() %>%
+    complete(mode, valeur, fill = list(n = 0, pct = 0)) %>%
+    mutate(valeur = factor(valeur, levels = rev(unname(lab))))
+}
+
+p_valeur_variable <- function(code) {
+  if (code %in% pv_ordinales$variable) return(pv_ordinales$p_valeur[pv_ordinales$variable == code])
+  if (code %in% pv_binaires$variable)  return(pv_binaires$p_valeur[pv_binaires$variable == code])
+  NA_real_
+}
+
+marqueur_sig <- function(p) if (!is.na(p) && p < 0.05) " *" else ""
+
+n_par_mode <- function(code) {
+  d <- combine %>% filter(!is.na(.data[[code]]))
+  c(internet = sum(d$mode == "internet"), telephone = sum(d$mode == "telephone"))
+}
+
+graphique_radiogroup <- function(code) {
+  d <- pct_par_mode(code)
+  ggplot(d, aes(x = valeur, y = pct, fill = mode)) +
+    geom_col(position = position_dodge(width = 0.65), width = 0.55) +
+    geom_text(aes(label = ifelse(pct == 0, "", paste0(round(pct), " %"))),
+              position = position_dodge(width = 0.65), hjust = -0.15, size = 3, color = "#0b0b0b") +
+    coord_flip(clip = "off") +
+    scale_y_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0.18))) +
+    scale_fill_manual(values = c(internet = couleur_internet, telephone = couleur_telephone),
+                       labels = c(internet = "Internet", telephone = "Téléphone")) +
+    theme_rapport()
+}
+
+graphique_checkbox <- function(code) {
+  d <- checkbox_tout %>% filter(variable == code) %>%
+    select(choix, pct_internet, pct_telephone, p_valeur) %>%
+    pivot_longer(c(pct_internet, pct_telephone), names_to = "mode", values_to = "pct") %>%
+    mutate(mode = ifelse(mode == "pct_internet", "internet", "telephone"))
+  ordre <- checkbox_tout %>% filter(variable == code) %>%
+    mutate(moy = (pct_internet + pct_telephone) / 2) %>% arrange(moy) %>% pull(choix)
+  d <- d %>% mutate(choix = factor(choix, levels = ordre),
+                     etiquette = paste0(round(pct), " %", ifelse(p_valeur < 0.05, "*", "")))
+  ggplot(d, aes(x = choix, y = pct, fill = mode)) +
+    geom_col(position = position_dodge(width = 0.7), width = 0.6) +
+    geom_text(aes(label = etiquette), position = position_dodge(width = 0.7),
+              hjust = -0.1, size = 2.8, color = "#0b0b0b") +
+    coord_flip(clip = "off") +
+    scale_y_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0.22))) +
+    scale_fill_manual(values = c(internet = couleur_internet, telephone = couleur_telephone),
+                       labels = c(internet = "Internet", telephone = "Téléphone")) +
+    theme_rapport()
+}
+```
+
+## À propos de ce document
+
+Ce document présente, question par question, les réponses obtenues auprès des
+organismes communautaires ayant répondu **par internet** (n = 105) et **par
+téléphone** (n = 25) au questionnaire sur les droits des usagers du système de
+santé et des services sociaux. Seules les questions à choix de réponses (fermées)
+sont incluses ici ; les réponses aux questions ouvertes font l'objet d'une analyse
+distincte.
+
+Un astérisque (\*) à côté d'un résultat indique un écart entre les deux modes de
+collecte jugé statistiquement significatif (seuil p < 0,05, test de Wilcoxon pour
+les échelles à 4 niveaux, test exact de Fisher pour les autres). Le nombre de
+répondants par mode variant d'une question à l'autre (questions non répondues ou
+non applicables selon les cas), le nombre de répondants (n) est indiqué sous
+chaque graphique.
+
+## Sommaire des différences significatives
+
+La liste ci-dessous reprend, question par question, tous les écarts jugés
+statistiquement significatifs (p < 0,05) présentés dans ce document. Les questions
+ou choix qui ne sont pas listés ici n'ont pas montré d'écart significatif entre les
+deux modes.
+
+```{r results='asis'}
+codes_radiogroup <- c("q0", "q2", "q3", "q5", "q11", "q14", "q14_1", "q15", "q16", "q17")
+
+for (code in codes_radiogroup) {
+  p <- p_valeur_variable(code)
+  if (!is.na(p) && p < 0.05) {
+    cat("**", texte_question(code), "**\n\n", sep = "")
+    d <- pct_par_mode(code)
+    for (niv in rev(levels(d$valeur))) {
+      di <- d %>% filter(valeur == niv)
+      pi <- di$pct[di$mode == "internet"]
+      pt <- di$pct[di$mode == "telephone"]
+      cat("- ", niv, " : ", round(pi), " % (internet) vs ", round(pt), " % (téléphone)\n", sep = "")
+    }
+    cat("\n")
+  }
+}
+
+for (code_cb in c("q1", "q10", "q12", "q21", "q22", "q23", "q24")) {
+  sig <- checkbox_tout %>% filter(variable == code_cb, p_valeur < 0.05) %>% arrange(desc(pct_internet))
+  if (nrow(sig) > 0) {
+    cat("**", texte_question(code_cb), "**\n\n", sep = "")
+    for (i in seq_len(nrow(sig))) {
+      cat("- ", sig$choix[i], " : ", round(sig$pct_internet[i]), " % (internet) vs ",
+          round(sig$pct_telephone[i]), " % (téléphone)\n", sep = "")
+    }
+    cat("\n")
+  }
+}
+```
+
+\newpage
+
+## Territoire desservi
+
+**`r texte_question("q0")`**`r marqueur_sig(p_valeur_variable("q0"))`
+
+```{r fig.height=1.6}
+graphique_radiogroup("q0")
+```
+n = `r n_par_mode("q0")["internet"]` (internet), n = `r n_par_mode("q0")["telephone"]` (téléphone).
+*Note : pour 10 des 25 organismes ayant répondu par téléphone, cette question n'a pas
+été explicitement notée par l'intervieweur.e. Ces 10 cas ont été comptabilisés ici comme
+"Non" (hypothèse retenue : la question n'était posée/notée que lorsque la réponse était
+"Oui").*
+
+\newpage
+
+## A. Raisons pour les usagers de fréquenter un organisme communautaire
+
+**`r texte_question("q1")`** — plusieurs réponses possibles par organisme.
+
+```{r fig.height=2.2}
+graphique_checkbox("q1")
+```
+n = `r n_par_mode("q1")["internet"]` (internet), n = `r n_par_mode("q1")["telephone"]` (téléphone)
+
+\bigskip
+
+**`r texte_question("q2")`**`r marqueur_sig(p_valeur_variable("q2"))`
+
+```{r}
+graphique_radiogroup("q2")
+```
+n = `r n_par_mode("q2")["internet"]` (internet), n = `r n_par_mode("q2")["telephone"]` (téléphone)
+
+\newpage
+
+## B. Connaissance des droits en santé et services sociaux
+
+**`r texte_question("q3")`**`r marqueur_sig(p_valeur_variable("q3"))`
+
+```{r}
+graphique_radiogroup("q3")
+```
+n = `r n_par_mode("q3")["internet"]` (internet), n = `r n_par_mode("q3")["telephone"]` (téléphone)
+
+\newpage
+
+## C. Respect des droits en santé et services sociaux
+
+**`r texte_question("q5")`**`r marqueur_sig(p_valeur_variable("q5"))`
+
+```{r}
+graphique_radiogroup("q5")
+```
+n = `r n_par_mode("q5")["internet"]` (internet), n = `r n_par_mode("q5")["telephone"]` (téléphone)
+
+\newpage
+
+## D. Défense des droits en santé et services sociaux
+
+**`r texte_question("q10")`** — plusieurs réponses possibles par organisme.
+
+```{r fig.height=2.6}
+graphique_checkbox("q10")
+```
+n = `r n_par_mode("q10")["internet"]` (internet), n = `r n_par_mode("q10")["telephone"]` (téléphone)
+
+\newpage
+
+## E. À qui s'adresser pour exprimer une plainte ou une insatisfaction
+
+**`r texte_question("q11")`**`r marqueur_sig(p_valeur_variable("q11"))`
+
+```{r}
+graphique_radiogroup("q11")
+```
+n = `r n_par_mode("q11")["internet"]` (internet), n = `r n_par_mode("q11")["telephone"]` (téléphone)
+
+\bigskip
+
+**`r texte_question("q12")`** — plusieurs réponses possibles par organisme.
+
+```{r fig.height=2.2}
+graphique_checkbox("q12")
+```
+n = `r n_par_mode("q12")["internet"]` (internet), n = `r n_par_mode("q12")["telephone"]` (téléphone)
+
+\newpage
+
+## F. Collaboration et concertation
+
+**`r texte_question("q14")`**`r marqueur_sig(p_valeur_variable("q14"))`
+
+```{r fig.height=1.6}
+graphique_radiogroup("q14")
+```
+n = `r n_par_mode("q14")["internet"]` (internet), n = `r n_par_mode("q14")["telephone"]` (téléphone)
+
+\bigskip
+
+**`r texte_question("q14_1")`** *(question posée uniquement si oui à la question précédente)*`r marqueur_sig(p_valeur_variable("q14_1"))`
+
+```{r fig.height=2.0}
+graphique_radiogroup("q14_1")
+```
+n = `r n_par_mode("q14_1")["internet"]` (internet), n = `r n_par_mode("q14_1")["telephone"]` (téléphone)
+
+\bigskip
+
+**`r texte_question("q15")`** *(question posée uniquement si oui à la question précédente)*`r marqueur_sig(p_valeur_variable("q15"))`
+
+```{r fig.height=1.6}
+graphique_radiogroup("q15")
+```
+n = `r n_par_mode("q15")["internet"]` (internet), n = `r n_par_mode("q15")["telephone"]` (téléphone)
+
+\newpage
+
+## G. Connaissance des Comités des usagers de l'Est-de-l'Île-de-Montréal
+
+**`r texte_question("q16")`**`r marqueur_sig(p_valeur_variable("q16"))`
+
+```{r fig.height=2.0}
+graphique_radiogroup("q16")
+```
+n = `r n_par_mode("q16")["internet"]` (internet), n = `r n_par_mode("q16")["telephone"]` (téléphone)
+
+\bigskip
+
+**`r texte_question("q17")`**`r marqueur_sig(p_valeur_variable("q17"))`
+
+```{r fig.height=1.6}
+graphique_radiogroup("q17")
+```
+n = `r n_par_mode("q17")["internet"]` (internet), n = `r n_par_mode("q17")["telephone"]` (téléphone)
+
+\newpage
+
+## I. Profil de l'organisme
+
+**`r texte_question("q21")`** — plusieurs réponses possibles par organisme.
+
+```{r fig.height=3.2}
+graphique_checkbox("q21")
+```
+n = `r n_par_mode("q21")["internet"]` (internet), n = `r n_par_mode("q21")["telephone"]` (téléphone)
+
+\newpage
+
+**`r texte_question("q22")`** — plusieurs réponses possibles par organisme.
+
+```{r fig.height=3.4}
+graphique_checkbox("q22")
+```
+n = `r n_par_mode("q22")["internet"]` (internet), n = `r n_par_mode("q22")["telephone"]` (téléphone)
+
+\newpage
+
+**`r texte_question("q23")`** — plusieurs réponses possibles par organisme.
+
+```{r fig.height=2.4}
+graphique_checkbox("q23")
+```
+n = `r n_par_mode("q23")["internet"]` (internet), n = `r n_par_mode("q23")["telephone"]` (téléphone)
+
+\newpage
+
+**`r texte_question("q24")`** — plusieurs réponses possibles par organisme.
+
+```{r fig.height=2.8}
+graphique_checkbox("q24")
+```
+n = `r n_par_mode("q24")["internet"]` (internet), n = `r n_par_mode("q24")["telephone"]` (téléphone)
