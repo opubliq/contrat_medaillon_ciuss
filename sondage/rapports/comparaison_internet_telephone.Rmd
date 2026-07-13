@@ -31,6 +31,24 @@ checkbox_tout <- bind_rows(cb_attitude, cb_profil) %>%
 
 texte_question <- function(code) dico$texte_question[dico$code == code][1]
 
+# --- Taux de réponse (volet organismes) ---
+# Population ciblée : organismes_partie_1 à _6 (issus du scraping 211qc.ca, 905 emails
+# uniques, aucun doublon interne) + organismes_locaux.csv (65 lignes, 58 emails uniques,
+# ajoutés pour compléter le 211 avec des organismes locaux absents du scraping) dédoublonné
+# par email (17 emails de locaux déjà présents dans les parties 1-6) : 905 + (58 - 17) = 946.
+# On retire ensuite les 93 échecs d'envoi (adresses courriel non valides) confirmés lors de
+# l'envoi automatique.
+n_population_brute   <- 946
+n_echecs_envoi       <- 93
+n_population_valide  <- n_population_brute - n_echecs_envoi
+
+# Répondants : 130 soumissions reçues, mais 2 organismes ont soumis deux fois (4 lignes au
+# total, conservées dans organismes_combined.csv pour l'analyse de contenu) -> 128 organismes
+# distincts ont répondu.
+n_repondants <- 128
+
+taux_reponse <- round(100 * n_repondants / n_population_valide, 1)
+
 # Couleurs fixes (mêmes deux couleurs partout dans le document)
 couleur_internet  <- "#2a78d6"
 couleur_telephone <- "#1baf7a"
@@ -143,6 +161,13 @@ les échelles à 4 niveaux, test exact de Fisher pour les autres). Le nombre de
 répondants par mode variant d'une question à l'autre (questions non répondues ou
 non applicables selon les cas), le nombre de répondants (n) est indiqué sous
 chaque graphique.
+
+### Taux de réponse
+
+Sur une population ciblée de `r n_population_valide` organismes (`r n_population_brute`
+organismes invités, moins `r n_echecs_envoi` échecs d'envoi dus à des adresses courriel
+non valides), `r n_repondants` organismes distincts ont répondu au questionnaire (par
+internet ou par téléphone), soit un **taux de réponse de `r taux_reponse` %**.
 
 ## Sommaire des différences significatives
 

@@ -208,10 +208,81 @@ prudence dans l'agrégation directe internet+téléphone pour ces variables pré
 
 ## Prochaines étapes
 
-- Recevoir et intégrer le volet usagers (`data/usagers/`) une fois disponible — même
-  logique de nettoyage/séparation quantitatif-qualitatif à prévoir, questionnaire
-  probablement différent (à valider avec l'utilisateur).
 - Analyse qualitative (codage thématique) des variables ouvertes une fois
   `organismes_qualitatif.csv` disponible.
 - Examiner qualitativement les verbatims "Autre" du mode téléphone (colonnes
   `*-Comment`) pour confirmer/infirmer l'hypothèse d'un artefact de codage.
+
+## Volet usagers (2026-07-12)
+
+Données reçues dans `data/usagers/` : deux fichiers de réponses brutes +
+`questionnaire_usagers.json` (en ligne) et `questionnaire_usagers_papier.json` (papier).
+
+**Mapping fichier -> mode** (confirmé par diff des deux JSON : seule différence,
+`hasOther` activé sur q3/q4 côté papier) :
+- `sondage_65050b17-..._reponses.xlsx` (n = 2892) = **papier**, pas de colonne `source`.
+- `sondage_bf820e5c-..._reponses.xlsx` (n = 366) = **en ligne**, colonne `source` avec
+  deux sous-groupes : `repondant` (n = 141, auto-administré/QR) et `interviewer`
+  (n = 225, saisi sur place par un.e intervieweur.e).
+
+**Décision de regroupement des modes (avec l'utilisateur, 2026-07-12)** : `interviewer`
+est traité comme la **même catégorie** que `papier` ("en personne" — un tiers consigne
+la réponse), par opposition à `repondant` ("en ligne" — auto-administré). Donc :
+- **en_ligne** = repondant seul (n = 141)
+- **en_personne** = interviewer + papier (n = 3117)
+La distinction fine reste disponible dans la colonne `sous_mode` de
+`usagers_combined.csv` si besoin d'une analyse plus fine plus tard.
+
+**⚠️ Point de vigilance — saisie du sous-groupe `interviewer` (non résolu)** : demande
+initiale de l'utilisateur de vérifier une hypothèse d'un collègue (un employé aurait pu
+saisir manuellement des formulaires papier dans le système en ligne). Aucune adresse IP
+n'est disponible dans les exports de réponses (colonne absente des deux fichiers) — donc
+impossible de trancher par ce biais. Proxy utilisé : horodatage `submitted_at`. Résultat :
+les 225 réponses `interviewer` se concentrent en **5 séances** (17, 23, 24, 25, 30 juin),
+au rythme d'~1 réponse/30-90s (trop rapide pour de vraies entrevues), dont une séance le
+**23 juin de 22h01 à 23h56** — horaire incompatible avec des entrevues en salle d'attente.
+Comparativement, les 141 réponses `repondant` sont étalées naturellement sur 2 mois
+(écart médian ~3h). Malgré ce signal, décision de l'utilisateur : garder `interviewer`
+regroupé avec `papier` sous "en_personne" (voir ci-dessus). **Mise à jour (2026-07-13)** :
+la note méthodologique documentant ce signal a été retirée du rapport client
+(`rapports/comparaison_ligne_personne_usagers.pdf`) à la demande de l'utilisateur — le
+constat reste consigné ici (mémoire interne du projet) mais n'apparaît plus dans le
+livrable. À valider éventuellement avec l'équipe terrain si le client soulève la question.
+
+**Particularité des données** : q11 (communauté culturelle, question `text`) n'existe pas
+du tout côté papier (colonne jamais créée), comme q18_2/4/5 pour le volet organismes.
+
+**Pipeline construit** (même structure que le volet organismes) :
+- `scripts/usagers_cleaning.R` -> `data/usagers/clean/usagers_combined.csv`
+  (⚠️ nécessite `read_excel(..., guess_max = Inf)` : q9_1/quartier est vide pour la
+  plupart des lignes, readxl devine sinon le type "logical" à partir d'un échantillon
+  de lignes vides et corrompt silencieusement les vraies valeurs texte plus loin dans
+  le fichier — repéré et corrigé le 2026-07-12).
+- `scripts/usagers_dictionnaire.R` -> `data/usagers/clean/dictionnaire_variables.csv`
+- `scripts/usagers_comparaison_modes.R` -> `comparaison_modes_ordinales.csv` (q10, âge,
+  Wilcoxon), `comparaison_modes_binaires.csv` (q1-q8 Oui/Non/NSP, Fisher),
+  `comparaison_modes_q9.csv` (lieu de résidence, Chi-carré), `comparaison_modes_checkbox.csv`
+  (q7_1, Fisher par choix).
+- `rapports/comparaison_ligne_personne_usagers.Rmd` -> rapport client, même gabarit que
+  `comparaison_internet_telephone.Rmd`.
+  (⚠️ piège rencontré : `read.csv` sans `na.strings = c("NA", "")` lit les valeurs
+  manquantes de colonnes texte non recodées — ex. q9 — comme chaîne vide plutôt que NA,
+  ce qui crée une fausse catégorie "NA" dans les graphiques à barres. Corrigé en
+  ajoutant `na.strings` à la lecture de `usagers_combined.csv`.)
+
+**Résultats — différences significatives (p < .05)** : q3 (connaissance des droits, plus
+souvent "Non" en ligne), q4 (respect des droits, plus souvent "Oui" en personne), q5
+(situation problématique vécue, plus souvent "Oui" en ligne), q8 (fréquente un organisme
+communautaire, plus souvent "Oui" en ligne), q9 (lieu de résidence, plus concentré sur
+l'Est de Montréal en ligne), q7_1 (s'adresser à l'intervenant.e ou à un organisme, plus
+fréquent en ligne). Aucune correction pour tests multiples appliquée (même limite que le
+volet organismes) — à interpréter avec prudence, surtout que le mode "en personne" agrège
+deux sous-populations elles-mêmes potentiellement différentes (papier vs interviewer).
+
+## Prochaines étapes (mise à jour 2026-07-12)
+
+- Analyse qualitative du volet usagers (section D, entièrement ouverte, + commentaires
+  libres des autres sections) une fois le découpage quantitatif/qualitatif fait (même
+  logique que `organismes_eta.R`, pas encore répliquée pour usagers).
+- Décider si le point de vigilance sur le sous-groupe `interviewer` nécessite un suivi
+  auprès de l'équipe terrain avant la livraison finale du rapport.

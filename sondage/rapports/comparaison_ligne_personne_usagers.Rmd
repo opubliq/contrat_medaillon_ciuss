@@ -1,0 +1,289 @@
+---
+title: "Comparaison des réponses — mode en ligne vs en personne"
+subtitle: "Consultation sur les droits des usagers du système de santé et des services sociaux — volet population"
+date: "12 juillet 2026"
+output:
+  pdf_document:
+    latex_engine: pdflatex
+geometry: margin=1in
+fontsize: 11pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6.5, fig.height = 2.6)
+
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(knitr)
+
+data_dir <- "G:/My Drive/_SharedFolder_CUCI-Est-de-Montréal/data"
+dossier_clean <- file.path(data_dir, "usagers/clean")
+combine      <- read.csv(file.path(dossier_clean, "usagers_combined.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE, na.strings = c("NA", ""))
+dico         <- read.csv(file.path(dossier_clean, "dictionnaire_variables.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE, na.strings = c("NA", ""))
+pv_ordinales <- read.csv(file.path(dossier_clean, "comparaison_modes_ordinales.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+pv_binaires  <- read.csv(file.path(dossier_clean, "comparaison_modes_binaires.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+pv_q9        <- read.csv(file.path(dossier_clean, "comparaison_modes_q9.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+cb_q7_1      <- read.csv(file.path(dossier_clean, "comparaison_modes_checkbox.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE) %>%
+  mutate(choix = ifelse(choix == "other", "Autre", choix))
+
+texte_question <- function(code) dico$texte_question[dico$code == code][1]
+
+# Couleurs fixes (mêmes deux couleurs partout dans le document)
+couleur_en_ligne    <- "#2a78d6"
+couleur_en_personne <- "#1baf7a"
+
+theme_rapport <- function() {
+  theme_minimal(base_size = 11) +
+    theme(
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor   = element_blank(),
+      panel.grid.major.x = element_line(color = "#e1e0d9", linewidth = 0.3),
+      axis.text  = element_text(color = "#52514e"),
+      axis.title = element_blank(),
+      legend.position = "top",
+      legend.title = element_blank(),
+      legend.text = element_text(color = "#0b0b0b"),
+      plot.margin = margin(4, 4, 4, 4)
+    )
+}
+
+# --- Légende des codes (recodage numérique -> texte lisible), ordre = ordre du questionnaire
+
+legende <- list(
+  q1  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q2  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q3  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q4  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q5  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q7  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q8  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q10 = c("1" = "34 ans et -", "2" = "35 à 44 ans", "3" = "45 et 64 ans", "4" = "65 ans et +"),
+  q9  = c("est_montreal" = "Est de Montréal", "grande_region" = "Grande région de Montréal",
+          "ailleurs_ile" = "Ailleurs sur l'île de Montréal", "exterieur_grande_region" = "Extérieur de la grande région")
+)
+
+pct_par_mode <- function(code) {
+  lab <- legende[[code]]
+  d <- combine %>% filter(!is.na(.data[[code]])) %>% select(mode, valeur = all_of(code))
+  d %>%
+    mutate(valeur = factor(as.character(valeur), levels = names(lab), labels = unname(lab))) %>%
+    count(mode, valeur, name = "n") %>%
+    group_by(mode) %>%
+    mutate(pct = 100 * n / sum(n), n_total_mode = sum(n)) %>%
+    ungroup() %>%
+    complete(mode, valeur, fill = list(n = 0, pct = 0)) %>%
+    mutate(valeur = factor(valeur, levels = rev(unname(lab))))
+}
+
+p_valeur_variable <- function(code) {
+  if (code %in% pv_ordinales$variable) return(pv_ordinales$p_valeur[pv_ordinales$variable == code])
+  if (code %in% pv_binaires$variable)  return(pv_binaires$p_valeur[pv_binaires$variable == code])
+  if (code %in% pv_q9$variable)        return(pv_q9$p_valeur[pv_q9$variable == code])
+  NA_real_
+}
+
+marqueur_sig <- function(p) if (!is.na(p) && p < 0.05) " *" else ""
+
+n_par_mode <- function(code) {
+  d <- combine %>% filter(!is.na(.data[[code]]))
+  c(en_ligne = sum(d$mode == "en_ligne"), en_personne = sum(d$mode == "en_personne"))
+}
+
+graphique_radiogroup <- function(code) {
+  d <- pct_par_mode(code)
+  ggplot(d, aes(x = valeur, y = pct, fill = mode)) +
+    geom_col(position = position_dodge(width = 0.65), width = 0.55) +
+    geom_text(aes(label = ifelse(pct == 0, "", paste0(round(pct), " %"))),
+              position = position_dodge(width = 0.65), hjust = -0.15, size = 3, color = "#0b0b0b") +
+    coord_flip(clip = "off") +
+    scale_y_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0.18))) +
+    scale_fill_manual(values = c(en_ligne = couleur_en_ligne, en_personne = couleur_en_personne),
+                       labels = c(en_ligne = "En ligne", en_personne = "En personne")) +
+    theme_rapport()
+}
+
+graphique_checkbox <- function(code, table_pv) {
+  d <- table_pv %>% filter(variable == code) %>%
+    select(choix, pct_en_ligne, pct_en_personne, p_valeur) %>%
+    pivot_longer(c(pct_en_ligne, pct_en_personne), names_to = "mode", values_to = "pct") %>%
+    mutate(mode = ifelse(mode == "pct_en_ligne", "en_ligne", "en_personne"))
+  ordre <- table_pv %>% filter(variable == code) %>%
+    mutate(moy = (pct_en_ligne + pct_en_personne) / 2) %>% arrange(moy) %>% pull(choix)
+  d <- d %>% mutate(choix = factor(choix, levels = ordre),
+                     etiquette = paste0(round(pct), " %", ifelse(p_valeur < 0.05, "*", "")))
+  ggplot(d, aes(x = choix, y = pct, fill = mode)) +
+    geom_col(position = position_dodge(width = 0.7), width = 0.6) +
+    geom_text(aes(label = etiquette), position = position_dodge(width = 0.7),
+              hjust = -0.1, size = 2.8, color = "#0b0b0b") +
+    coord_flip(clip = "off") +
+    scale_y_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0.22))) +
+    scale_fill_manual(values = c(en_ligne = couleur_en_ligne, en_personne = couleur_en_personne),
+                       labels = c(en_ligne = "En ligne", en_personne = "En personne")) +
+    theme_rapport()
+}
+```
+
+## À propos de ce document
+
+Ce document présente, question par question, les réponses obtenues auprès de la
+population de l'Est de Montréal ayant répondu **en ligne** (n = `r sum(combine$mode == "en_ligne")`)
+et **en personne** (n = `r sum(combine$mode == "en_personne")`) au questionnaire sur les
+droits des usagers du système de santé et des services sociaux. Seules les questions à
+choix de réponses (fermées) sont incluses ici ; les réponses aux questions ouvertes
+(section D — suggestions aux Comités des usagers, et les commentaires libres des autres
+sections) font l'objet d'une analyse distincte.
+
+Un astérisque (\*) à côté d'un résultat indique un écart entre les deux modes de
+collecte jugé statistiquement significatif (seuil p < 0,05 ; test de Wilcoxon pour la
+variable ordinale q10, test exact de Fisher pour les variables Oui/Non/Ne sais pas et le
+détail de q7_1, test du Chi-carré pour q9). Le nombre de répondants par mode variant
+d'une question à l'autre (questions non répondues ou non applicables selon les cas), le
+nombre de répondants (n) est indiqué sous chaque graphique.
+
+### Note méthodologique — composition du mode « en personne »
+
+Le mode **en personne** regroupe deux sources de collecte distinctes : les entrevues
+menées sur place par un.e intervieweur.e (n = 225) et le questionnaire papier (n = 2 892).
+Ces deux sources sont fusionnées car dans les deux cas, c'est un tiers — et non le
+répondant lui-même — qui consigne les réponses, par opposition au mode **en ligne**
+(n = 141), entièrement auto-administré.
+
+\newpage
+
+## Sommaire des différences significatives
+
+La liste ci-dessous reprend, question par question, tous les écarts jugés
+statistiquement significatifs (p < 0,05) présentés dans ce document. Les questions ou
+choix qui ne sont pas listés ici n'ont pas montré d'écart significatif entre les deux
+modes.
+
+```{r results='asis'}
+codes_radiogroup <- c("q1", "q2", "q3", "q4", "q5", "q7", "q8", "q9", "q10")
+
+for (code in codes_radiogroup) {
+  p <- p_valeur_variable(code)
+  if (!is.na(p) && p < 0.05) {
+    cat("**", texte_question(code), "**\n\n", sep = "")
+    d <- pct_par_mode(code)
+    for (niv in rev(levels(d$valeur))) {
+      di <- d %>% filter(valeur == niv)
+      pl <- di$pct[di$mode == "en_ligne"]
+      pp <- di$pct[di$mode == "en_personne"]
+      cat("- ", niv, " : ", round(pl), " % (en ligne) vs ", round(pp), " % (en personne)\n", sep = "")
+    }
+    cat("\n")
+  }
+}
+
+sig_cb <- cb_q7_1 %>% filter(p_valeur < 0.05) %>% arrange(desc(pct_en_ligne))
+if (nrow(sig_cb) > 0) {
+  cat("**", texte_question("q7_1"), "**\n\n", sep = "")
+  for (i in seq_len(nrow(sig_cb))) {
+    cat("- ", sig_cb$choix[i], " : ", round(sig_cb$pct_en_ligne[i]), " % (en ligne) vs ",
+        round(sig_cb$pct_en_personne[i]), " % (en personne)\n", sep = "")
+  }
+  cat("\n")
+}
+```
+
+\newpage
+
+## A. Connaissance des comités des usagers
+
+**`r texte_question("q1")`**`r marqueur_sig(p_valeur_variable("q1"))`
+
+```{r fig.height=1.8}
+graphique_radiogroup("q1")
+```
+n = `r n_par_mode("q1")["en_ligne"]` (en ligne), n = `r n_par_mode("q1")["en_personne"]` (en personne)
+
+\bigskip
+
+**`r texte_question("q2")`**`r marqueur_sig(p_valeur_variable("q2"))`
+
+```{r fig.height=1.8}
+graphique_radiogroup("q2")
+```
+n = `r n_par_mode("q2")["en_ligne"]` (en ligne), n = `r n_par_mode("q2")["en_personne"]` (en personne)
+
+\newpage
+
+## B. Connaissance des droits des usagers
+
+**`r texte_question("q3")`**`r marqueur_sig(p_valeur_variable("q3"))`
+
+```{r fig.height=1.8}
+graphique_radiogroup("q3")
+```
+n = `r n_par_mode("q3")["en_ligne"]` (en ligne), n = `r n_par_mode("q3")["en_personne"]` (en personne)
+
+\newpage
+
+## C. Respect des droits des usagers
+
+**`r texte_question("q4")`**`r marqueur_sig(p_valeur_variable("q4"))`
+
+```{r fig.height=1.8}
+graphique_radiogroup("q4")
+```
+n = `r n_par_mode("q4")["en_ligne"]` (en ligne), n = `r n_par_mode("q4")["en_personne"]` (en personne)
+
+\bigskip
+
+**`r texte_question("q5")`**`r marqueur_sig(p_valeur_variable("q5"))`
+
+```{r fig.height=1.8}
+graphique_radiogroup("q5")
+```
+n = `r n_par_mode("q5")["en_ligne"]` (en ligne), n = `r n_par_mode("q5")["en_personne"]` (en personne)
+
+\newpage
+
+## E. À qui s'adresser pour exprimer une plainte
+
+**`r texte_question("q7")`**`r marqueur_sig(p_valeur_variable("q7"))`
+
+```{r fig.height=1.8}
+graphique_radiogroup("q7")
+```
+n = `r n_par_mode("q7")["en_ligne"]` (en ligne), n = `r n_par_mode("q7")["en_personne"]` (en personne)
+
+\bigskip
+
+**`r texte_question("q7_1")`** *(question posée uniquement si oui à la question précédente)* — plusieurs réponses possibles.
+
+```{r fig.height=2.4}
+graphique_checkbox("q7_1", cb_q7_1)
+```
+n = `r n_par_mode("q7_1")["en_ligne"]` (en ligne), n = `r n_par_mode("q7_1")["en_personne"]` (en personne)
+
+\newpage
+
+## F. Profil du répondant
+
+**`r texte_question("q8")`**`r marqueur_sig(p_valeur_variable("q8"))`
+
+```{r fig.height=1.8}
+graphique_radiogroup("q8")
+```
+n = `r n_par_mode("q8")["en_ligne"]` (en ligne), n = `r n_par_mode("q8")["en_personne"]` (en personne)
+
+\bigskip
+
+**`r texte_question("q9")`**`r marqueur_sig(p_valeur_variable("q9"))`
+
+```{r fig.height=2.0}
+graphique_radiogroup("q9")
+```
+n = `r n_par_mode("q9")["en_ligne"]` (en ligne), n = `r n_par_mode("q9")["en_personne"]` (en personne)
+
+\newpage
+
+**`r texte_question("q10")`**`r marqueur_sig(p_valeur_variable("q10"))`
+
+```{r fig.height=1.8}
+graphique_radiogroup("q10")
+```
+n = `r n_par_mode("q10")["en_ligne"]` (en ligne), n = `r n_par_mode("q10")["en_personne"]` (en personne)
