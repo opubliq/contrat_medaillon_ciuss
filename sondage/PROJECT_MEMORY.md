@@ -131,6 +131,16 @@ qu'un sondage à échelle standardisée. Détail ligne par ligne dans
   (soumis les 2026-05-22 et 2026-06-01), soit 4 lignes au total. Flagués dans le
   nettoyage (colonne `doublon_email`). **Décision (2026-07-07) : on les garde tous les
   deux pour l'instant**, à revisiter plus tard si besoin.
+  **Vérification (2026-07-23)** : comparaison colonne par colonne des paires de
+  soumissions (hors métadonnées) — ce ne sont PAS des resoumissions identiques
+  (erreur/doublon technique). `direction@mhanjou.ca` : 23/48 colonnes diffèrent
+  entre les deux soumissions, avec des réponses ouvertes non redondantes (chaque
+  soumission remplit des champs que l'autre laisse vides). `info@hopefordementia.org` :
+  26/48 colonnes diffèrent, et même **q0 diffère** (Oui vs Non sur le territoire
+  desservi) — signe fort de deux répondants distincts au sein du même organisme,
+  pas d'une resoumission par la même personne. **Décision confirmée : les 4 lignes
+  sont conservées**, traitées comme 4 répondants légitimes (et non 2 organismes
+  distincts comptés en double) pour l'analyse de contenu.
 - ⚠️ Un premier comptage naïf (`.duplicated().sum()` en Python) avait donné 21 "emails
   dupliqués" côté internet — c'était un artefact : ce comptage traite les valeurs
   manquantes (`NaN`) comme des doublons entre elles, or 20 organismes sur 105 n'ont
@@ -212,6 +222,93 @@ prudence dans l'agrégation directe internet+téléphone pour ces variables pré
   `organismes_qualitatif.csv` disponible.
 - Examiner qualitativement les verbatims "Autre" du mode téléphone (colonnes
   `*-Comment`) pour confirmer/infirmer l'hypothèse d'un artefact de codage.
+
+## Variable de zone territoriale (2026-07-23)
+
+Demande client (`notes_rencontre_13juillet.md`) : distribution des répondants
+par zone (provincial / grand Montréal / local=Hochelaga). Deux tentatives :
+
+1. **Proxy simplifié à partir de q22** (`scripts/organismes_zone_locale.R`) —
+   q22 n'offrant que les 10 quartiers CIUSSS-Est comme choix (pas d'option
+   grand Montréal/provincial), seule une distinction "local (1 ou 2+ quartiers
+   cochés)" vs "hors zone locale (q22 vide)" est possible. Résultat : 22 % hors
+   zone locale, 28 % local-1 quartier, 50 % local-2+ quartiers (n=130).
+   Sortie : `organismes_zone_locale.csv` / `distribution_zone_locale_organismes.png`.
+
+2. **Jointure à la classification d'Hubert** (`scripts/organismes_zone_territoire.R`),
+   dès que `liste_organismes/data/04_bottin_secteurs.csv` a été poussé par Hubert
+   (commit `0d87d25`, 2026-07-23) — colonne `categorie_territoire`
+   (local/hochelaga-maisonneuve/montreal/grand_montreal/provincial), jointure par
+   nom d'organisme (`participant_name`). **Deux limites importantes identifiées :**
+   - **Mode téléphone injoignable** : `participant_name` ET `participant_email`
+     sont 100 % vides dans le fichier brut des 25 entrevues téléphoniques
+     (vérifié 2026-07-23) — aucune clé pour joindre ces répondants au bottin.
+     C'est justement le sous-groupe que le client veut mettre de l'avant.
+     **Action décidée avec l'utilisateur : demander à Hubert/Nicolas une liste
+     externe (fichier de suivi des appels) associant les 25 entrevues à un nom
+     d'organisme.**
+   - **`categorie_territoire` mesure le territoire AUTO-DÉCRIT dans l'annuaire
+     211/CartesHM (étendue de couverture déclarée), pas la localisation
+     physique dans le secteur CIUSSS-Est.** Ex. "Maison d'hébergement Anjou"
+     est classée `grand_montreal` parce que son champ `territoire` dit
+     littéralement "Grand Montréal", malgré un nom très local. Cohérent avec
+     `0 %` des 85 répondants appariés classés `local`/`hochelaga-maisonneuve`
+     (alors que q22 montre au contraire un fort ancrage local, ex. 84 %
+     cochent Hochelaga) : les 17 organismes tagués `local` dans
+     `liste_organismes/scripts/05_chantier.py` viennent du chantier
+     "proximité" (commit `265a9dd`, ajouté après la collecte du sondage) et ne
+     faisaient probablement pas partie de la population invitée à l'origine.
+     **À clarifier avec Hubert avant d'utiliser cette variable dans un livrable
+     client** — elle ne répond pas exactement à la question "est-ce un
+     organisme du secteur CIUSSS-Est ?".
+   - Sur les 85 appariés (mode internet uniquement, tous en correspondance
+     exacte de nom) : 38 % grand_montreal (n=32), 33 % montreal (n=28), 29 %
+     provincial (n=25). 20 répondants internet supplémentaires ont un
+     `participant_name` vide et ne sont pas non plus appariés — piste possible :
+     les rattacher par email à `sondage/listes_organismes/*.csv` (liste
+     d'invitation) pour récupérer leur nom.
+   Sorties : `organismes_zone_territoire.csv` (avec `methode_appariement` par
+   ligne) / `distribution_zone_territoire_organismes.png`.
+
+### Taux de réponse local vs global (2026-07-23)
+
+Vérification directe : `sondage/listes_organismes/organismes_locaux.csv` (65
+lignes, 58 emails uniques / 59 noms uniques) est la liste d'organismes ajoutée
+spécifiquement pour compléter le scraping 211 avec des organismes locaux
+absents de ce dernier (cf. description dans `PROJECT_MEMORY.md` plus haut,
+section "Résultats de l'ETA"). Matché contre les 130 lignes de
+`organismes_combined.csv` par email ET par nom (normalisés) :
+
+- **Seulement 2 organismes distincts de cette liste ont répondu** :
+  "anonyme (l')" (matché par email) et "entre mamans et papas" (matché par
+  nom seul — email différent de celui sur la liste d'invitation, possible
+  changement d'adresse courriel).
+- **Taux de réponse local : 2/58 = 3,45 %**, vs **taux de réponse global :
+  128/853 = 15,0 %** (population valide, voir section taux de réponse
+  ci-dessus). Le taux local est environ **4,3x plus faible** que le taux
+  global.
+
+**Limites de ce calcul (à garder en tête avant de le présenter au client) :**
+- Le dénominateur local (58) **n'exclut pas les échecs d'envoi spécifiques**
+  à cette liste — non identifiés à ce jour. C'est justement l'action en
+  attente listée dans `notes_rencontre_13juillet.md` ("Taux de réponse pour
+  le local, il faut identifier les échecs d'envois locaux (Nicolas)"). Si
+  plusieurs de ces 58 emails ont bondi, le vrai taux de réponse (sur invitations
+  effectivement délivrées) serait plus élevé que 3,45 %, mais probablement
+  toujours sous le taux global.
+- **Les 25 entrevues téléphoniques ne peuvent pas être vérifiées** contre
+  cette liste (aucun nom/email enregistré, voir plus haut) — il est possible
+  qu'une partie des appels téléphoniques ait justement ciblé des organismes
+  locaux pour compenser leur faible taux de réponse en ligne. Hypothèse à
+  valider avec l'équipe qui a mené les entretiens téléphoniques.
+- 20 répondants internet supplémentaires sans nom renseigné restent aussi non
+  vérifiables contre cette liste.
+
+**Conclusion provisoire** : même avec ces limites, l'écart (3,45 % vs 15,0 %)
+est assez large pour suggérer un vrai sous-taux de réponse chez les organismes
+spécifiquement locaux — cohérent avec le `0 %` classé "local"/"hochelaga-maisonneuve"
+trouvé via `categorie_territoire` plus haut. Les deux constats se corroborent
+mutuellement, malgré leurs limites individuelles.
 
 ## Volet usagers (2026-07-12)
 

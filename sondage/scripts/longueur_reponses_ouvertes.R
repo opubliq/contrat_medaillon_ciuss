@@ -21,6 +21,7 @@ data_dir <- "G:/My Drive/_SharedFolder_CUCI-Est-de-Montréal/data"
 
 couleur_organismes <- "#2a78d6"
 couleur_usagers     <- "#1baf7a"
+couleur_entrevue    <- "#e8792a"
 
 theme_distribution <- function() {
   theme_minimal(base_size = 10) +
@@ -54,6 +55,17 @@ longueurs_par_question <- function(df, codes_ouverts) {
     filter(!is.na(n_mots))
 }
 
+# variante qui conserve une colonne de groupe (ex. mode) pour permettre une
+# distinction visuelle (couleur) dans le graphique, en plus de code/n_mots
+longueurs_par_question_groupe <- function(df, codes_ouverts, colonne_groupe) {
+  codes_ouverts <- codes_ouverts[codes_ouverts %in% names(df)]
+  df %>%
+    select(all_of(colonne_groupe), all_of(codes_ouverts)) %>%
+    mutate(across(all_of(codes_ouverts), compter_mots)) %>%
+    pivot_longer(all_of(codes_ouverts), names_to = "code", values_to = "n_mots") %>%
+    filter(!is.na(n_mots))
+}
+
 # Facette les questions par ordre décroissant de volume (nombre de réponses),
 # une distribution (histogramme) par question, échelles libres (les longueurs
 # varient énormément d'une question à l'autre).
@@ -68,6 +80,21 @@ graphique_distributions <- function(long_df, couleur, titre, sous_titre) {
     theme_distribution()
 }
 
+# même graphique, avec une couleur distincte pour un sous-groupe de réponses
+# (empilé par groupe dans chaque histogramme)
+graphique_distributions_groupe <- function(long_df, colonne_groupe, couleurs, titre, sous_titre) {
+  ordre <- long_df %>% count(code, name = "n") %>% arrange(desc(n)) %>% pull(code)
+  long_df <- long_df %>% mutate(code = fct_relevel(code, ordre))
+
+  ggplot(long_df, aes(x = n_mots, fill = .data[[colonne_groupe]])) +
+    geom_histogram(bins = 20, color = NA, position = "stack") +
+    facet_wrap(vars(code), scales = "free", ncol = 5) +
+    scale_fill_manual(values = couleurs, name = NULL) +
+    labs(title = titre, subtitle = sous_titre, x = "Longueur de la réponse (mots)", y = "Nombre de réponses") +
+    theme_distribution() +
+    theme(legend.position = "top")
+}
+
 # --- Volet organismes -------------------------------------------------------
 
 dossier_organismes <- file.path(data_dir, "organismes/clean")
@@ -75,10 +102,13 @@ qual_organismes  <- read_csv(file.path(dossier_organismes, "organismes_qualitati
 dico_organismes  <- read_csv(file.path(dossier_organismes, "dictionnaire_variables.csv"), show_col_types = FALSE)
 codes_ouverts_organismes <- dico_organismes %>% filter(type == "ouvert") %>% pull(code)
 
-long_organismes <- longueurs_par_question(qual_organismes, codes_ouverts_organismes)
+long_organismes <- longueurs_par_question_groupe(qual_organismes, codes_ouverts_organismes, "mode")
+long_organismes <- long_organismes %>%
+  mutate(mode = recode(mode, telephone = "Entrevue téléphonique (n=25)", internet = "Autres réponses (en ligne)"))
 
-g_organismes <- graphique_distributions(
-  long_organismes, couleur_organismes,
+g_organismes <- graphique_distributions_groupe(
+  long_organismes, "mode",
+  c("Autres réponses (en ligne)" = couleur_organismes, "Entrevue téléphonique (n=25)" = couleur_entrevue),
   "Volet organismes communautaires — distribution des longueurs de réponse",
   paste0(nrow(long_organismes), " réponses non vides, ", n_distinct(long_organismes$code), " questions ouvertes")
 )

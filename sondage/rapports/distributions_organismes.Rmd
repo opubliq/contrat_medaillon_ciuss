@@ -1,0 +1,118 @@
+---
+title: "Distributions — volet organismes communautaires"
+subtitle: "Variables fermées, internet + téléphone fusionnés"
+output:
+  pdf_document:
+    latex_engine: pdflatex
+geometry: margin=1in
+fontsize: 11pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.width = 6.5, fig.height = 2.6)
+
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(purrr)
+library(ggplot2)
+
+data_dir <- "G:/My Drive/_SharedFolder_CUCI-Est-de-Montréal/data"
+dossier_clean <- file.path(data_dir, "organismes/clean")
+combine <- read.csv(file.path(dossier_clean, "organismes_combined.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+dico    <- read.csv(file.path(dossier_clean, "dictionnaire_variables.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+
+texte_question <- function(code) dico$texte_question[dico$code == code][1]
+
+couleur <- "#2a78d6"
+
+theme_rapport <- function() {
+  theme_minimal(base_size = 11) +
+    theme(
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor   = element_blank(),
+      panel.grid.major.x = element_line(color = "#e1e0d9", linewidth = 0.3),
+      axis.text  = element_text(color = "#52514e"),
+      axis.title = element_blank(),
+      plot.margin = margin(4, 4, 4, 4)
+    )
+}
+
+legende <- list(
+  q0    = c("1" = "Oui", "2" = "Non"),
+  q14   = c("1" = "Oui", "2" = "Non"),
+  q15   = c("1" = "Oui", "2" = "Non"),
+  q17   = c("1" = "Oui", "2" = "Non"),
+  q14_1 = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q16   = c("1" = "Oui", "2" = "Non", "9" = "NSP / Autre"),
+  q2    = c("1" = "Jamais", "2" = "Rarement", "3" = "Souvent", "4" = "Très souvent"),
+  q3    = c("4" = "Très grande connaissance", "3" = "Assez grande connaissance",
+            "2" = "Peu de connaissance", "1" = "Pas du tout de connaissance"),
+  q5    = c("4" = "Très respectés", "3" = "Assez respectés",
+            "2" = "Peu respectés", "1" = "Pas du tout respectés"),
+  q11   = c("4" = "Très facile", "3" = "Assez facile",
+            "2" = "Assez difficile", "1" = "Très difficile")
+)
+
+graphique_radiogroup <- function(code) {
+  lab <- legende[[code]]
+  d <- combine %>% filter(!is.na(.data[[code]])) %>% select(valeur = all_of(code))
+  d <- d %>%
+    mutate(valeur = factor(as.character(valeur), levels = names(lab), labels = unname(lab))) %>%
+    count(valeur, name = "n") %>%
+    complete(valeur, fill = list(n = 0)) %>%
+    mutate(pct = 100 * n / sum(n), valeur = factor(valeur, levels = rev(unname(lab))))
+
+  ggplot(d, aes(x = valeur, y = pct)) +
+    geom_col(fill = couleur, width = 0.55) +
+    geom_text(aes(label = ifelse(pct == 0, "", paste0(round(pct), " %"))),
+              hjust = -0.15, size = 3, color = "#0b0b0b") +
+    coord_flip(clip = "off") +
+    scale_y_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0.18))) +
+    theme_rapport()
+}
+
+graphique_checkbox <- function(code) {
+  d <- combine %>% filter(!is.na(.data[[code]])) %>% select(valeur = all_of(code))
+  choix_distincts <- d$valeur %>% str_split("\\s*\\|\\s*") %>% unlist() %>% unique() %>% sort()
+  n_total <- nrow(d)
+  d2 <- map_dfr(choix_distincts, function(ch) {
+    tibble(choix = ifelse(ch == "other", "Autre", ch),
+           pct = 100 * sum(str_detect(d$valeur, fixed(ch))) / n_total)
+  })
+  ordre <- d2 %>% arrange(pct) %>% pull(choix)
+  d2 <- d2 %>% mutate(choix = factor(choix, levels = ordre))
+
+  ggplot(d2, aes(x = choix, y = pct)) +
+    geom_col(fill = couleur, width = 0.6) +
+    geom_text(aes(label = paste0(round(pct), " %")), hjust = -0.1, size = 2.8, color = "#0b0b0b") +
+    coord_flip(clip = "off") +
+    scale_y_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0.22))) +
+    theme_rapport()
+}
+
+codes_radiogroup <- c("q0", "q2", "q3", "q5", "q11", "q14", "q14_1", "q15", "q16", "q17")
+codes_checkbox   <- c("q1", "q10", "q12", "q21", "q22", "q23", "q24")
+```
+
+```{r results='asis'}
+for (code in codes_radiogroup) {
+  cat("**", texte_question(code), "**\n\n", sep = "")
+  print(graphique_radiogroup(code))
+  cat("\n\\bigskip\n\n")
+}
+
+for (code in codes_checkbox) {
+  cat("**", texte_question(code), "**\n\n", sep = "")
+  print(graphique_checkbox(code))
+  cat("\n\\bigskip\n\n")
+}
+```
+
+\newpage
+
+**Longueur des réponses aux questions ouvertes (en mots), par mode de collecte**
+
+```{r fig.width=9.5, fig.height=11, out.width="100%"}
+knitr::include_graphics(file.path(dossier_clean, "distribution_longueur_organismes.png"))
+```
