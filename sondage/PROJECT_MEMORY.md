@@ -376,10 +376,153 @@ fréquent en ligne). Aucune correction pour tests multiples appliquée (même li
 volet organismes) — à interpréter avec prudence, surtout que le mode "en personne" agrège
 deux sous-populations elles-mêmes potentiellement différentes (papier vs interviewer).
 
-## Prochaines étapes (mise à jour 2026-07-12)
+## Annotation qualitative — variable `mode` (2026-07-26)
+
+Les 29 exports de la plateforme d'annotation
+(`data/organismes/clean/annotation_quali/opubliq-annotations-*.csv`, une question
+ouverte par fichier, 1 615 annotations au total) ne conservent que
+`respondent_id` : rien n'y indique si le verbatim vient du questionnaire en ligne
+ou d'une entrevue téléphonique. La colonne `mode` (internet/telephone) a été
+ajoutée aux 28 fichiers qui ne l'avaient pas encore (q1_1 avait été traité lors
+d'une session précédente), insérée juste après `respondent_id`.
+
+Script : `scripts/organismes_annotation_mode.R` (idempotent — relancer ne fait
+que revalider les fichiers déjà traités). Sortie récapitulative :
+`data/organismes/clean/annotation_quali_resume_modes.csv`.
+
+- **Clé de jointure : `respondent_id` est un index de ligne commençant à 0**,
+  donc `ligne = respondent_id + 1` dans `organismes_qualitatif.csv` (n=130,
+  lignes 1-105 = internet, 106-130 = téléphone). ⚠️ Piège rencontré : une
+  hypothèse d'index commençant à 1 donne quand même une concordance **parfaite
+  sur `mode`** (les deux modes forment des blocs contigus, un décalage de 1 reste
+  presque toujours dans le bon bloc) — c'est la comparaison du **verbatim**
+  (`text` de l'annotation vs colonne source) qui révèle le décalage. Le script
+  valide donc systématiquement les verbatims, pas le mode, et s'arrête si un
+  seul ne concorde pas. Concordance actuelle : 1 615/1 615.
+- Fidélité de réécriture vérifiée : hors ajout de `mode`, les fichiers réécrits
+  sont identiques colonne par colonne à l'original (BOM UTF-8, accents et
+  guillemets préservés ; seule différence octet : un saut de ligne final que les
+  exports d'origine n'avaient pas).
+
+### Contrôle de couverture des 29 fichiers (2026-07-26)
+
+Vérification distincte de celle du script (qui ne valide que verbatims + mode) :
+couverture, doublons, labels vides.
+
+- **Couverture quasi totale : 1 615 annotations pour 1 626 réponses non vides.**
+  Les **11 réponses non annotées sont toutes littéralement `N/A` / `n/a`**
+  (3 caractères, toutes en mode internet), réparties sur q13 (2), q6 (3),
+  q18_3, q18_5, q18_6, q20, q7, q8 (1 chacune). Non-réponses écartées à juste
+  titre par la plateforme — **aucune perte de matériau réel**.
+- **0 doublon de `respondent_id`, 0 label vide, 0 annotation sans réponse
+  source**, sur les 29 fichiers. q1_1 : 53/53, couverture 100 % (39/39 internet,
+  14/14 téléphone).
+- 157 labels distincts au total, 3 à 7 par question. Aucun quasi-doublon
+  (aucune paire de labels identiques une fois accents/casse/ponctuation
+  neutralisés). ⚠️ **Une coquille à corriger avant livraison : « Besoins
+  matériels immediats »** (q1_1, 5 occurrences) — accent manquant à *immédiats*,
+  et ce libellé apparaîtra tel quel dans les tableaux/graphiques client.
+
+**Label « non classable » : 113 annotations (7,0 %), très inégalement réparti —
+8,6 % en internet vs 1,4 % en téléphone** (Fisher p = 1,2e‑07, OR = 0,15). Les
+verbatims « non classable » sont nettement plus courts (médiane 19 caractères vs
+83 pour les autres) et sont typiquement des non-réponses de politesse (« Non »,
+« Aucun », « pas d'idée », « déjà en place »). Lecture : le questionnaire
+auto-administré récolte beaucoup de réponses ouvertes vides de contenu, que
+l'entrevue téléphonique produit peu (l'intervieweur.e relance ou ne consigne
+rien). **Attention à l'effet sur les comparaisons de modes** : à effectif brut
+égal, le matériau téléphone est plus dense en contenu, donc comparer des
+pourcentages calculés sur *toutes* les annotations désavantage mécaniquement
+l'internet. Calculer les distributions de labels **hors « non classable »** pour
+tout contraste internet/téléphone.
+
+**Répartition des annotations par mode** : 1 253 internet (77,6 %) / 362
+téléphone (22,4 %), globalement cohérent avec le poids du mode téléphone dans
+l'échantillon (25/130 = 19 %). Points saillants :
+
+- **q18_2, q18_4, q18_5 : 0 annotation téléphone** — attendu, ces 3 colonnes
+  n'existent pas dans le fichier réponses téléphone (voir section "Particularités
+  et anomalies"). Toute lecture comparative de q18 doit l'expliciter.
+- **q10-Comment : 11 téléphone / 6 internet (64,7 % téléphone)**, et
+  q12-Comment / q16-Comment à 50 % — surreprésentation nette du téléphone dans
+  les champs "Autre". Cela **corrobore l'hypothèse d'artefact de codage** déjà
+  formulée dans l'ETA (l'intervieweur.e classe les verbatims en "Autre" par
+  défaut). Les annotations de ces champs sont donc le matériau tout indiqué pour
+  trancher l'action en attente « examiner qualitativement les verbatims "Autre"
+  du mode téléphone ».
+- À l'inverse q11_1 (1 téléphone / 16), q17_1 (1/6), q2_2 (5/41) et q18_6 (1/30)
+  reposent quasi exclusivement sur l'internet — éviter d'y présenter un contraste
+  internet/téléphone, l'effectif téléphone ne le supporte pas.
+
+## Document de vérification manuelle des annotations (2026-07-26)
+
+Script : `scripts/organismes_verification_annotations.R`. Sorties dans
+`rapports/verification_annotations/` :
+- `verification_annotations_complet.pdf` — **187 pages**, les 29 questions avec
+  table des matières ;
+- `par_question/verification_<code>.pdf` — **29 PDF autonomes** (2 à 13 pages),
+  pour confier une question à une personne sans lui transmettre tout le document.
+
+Structure par question : libellé de la question → **question mère** quand la
+question seule est incompréhensible → propriété annotée (la consigne donnée à
+l'annotateur) → tableau récapitulatif des catégories (n, %, ventilation
+internet/téléphone) → **intégralité des réponses regroupées par catégorie**,
+chacune préfixée de `#respondent_id · mode`. Catégories triées par effectif
+décroissant, « non classable » toujours en dernier.
+
+**Choix retenus avec l'utilisateur** : regroupement par catégorie (et non par
+répondant) pour permettre de repérer un intrus d'un coup d'œil ; pas d'espace de
+vérification imprimé (document compact) ; les deux formats (complet + unitaire).
+
+**Document entièrement en français (2026-07-26)** : `\usepackage[french]{babel}`
+traduit les titres automatiques (« Table des matières » plutôt que
+« Contents ») **et** active la césure française, ce qui compte sur 187 pages de
+texte justifié. Métadonnées PDF forcées (`pdflang=fr-CA`, `pdftitle`,
+`pdfcreator=Opubliq` — sinon hyperref écrit « LaTeX with hyperref »). Les
+valeurs de `mode` étant des codes ASCII, `libelle_mode()` affiche
+« téléphone » et non « telephone ». Vérifié : plus aucun marqueur anglais dans
+le document complet ni dans les 29 PDF unitaires (les occurrences restantes —
+*part, page, question, mode, internet* — sont des mots français ou du texte de
+répondants).
+
+**Libellés d'annotation corrigés dans les CSV sources (2026-07-26)** — script
+`scripts/organismes_corriger_libelles.R`, idempotent :
+- « Partenariats et outreach » → « **Partenariats et travail de proximité** »
+  (q4, n=26) : anglicisme. Les verbatims de la catégorie portent sur les
+  kiosques, tournées d'organismes et séances d'information dans le milieu.
+- « Besoins matériels immediats » → « **immédiats** » (q1_1, n=5).
+Après correction, `organismes_annotation_mode.R` a été relancé et revalide
+1 615/1 615 verbatims — la réécriture des CSV n'altère rien d'autre.
+
+**Points techniques :**
+- Le LaTeX est **généré directement**, pas via R Markdown : les verbatims sont du
+  texte libre et pandoc interpréterait les caractères markdown qu'ils
+  contiennent. Tout passe par `escaper_latex()`. Compilation `xelatex` via
+  `tinytex::latexmk` (⚠️ lui passer un chemin Windows `C:/...` — un chemin
+  git-bash `/c/...` fait échouer la compilation sans produire de log).
+- **Le chapeau de q18 n'existe pas dans `dictionnaire_variables.csv`** (seuls
+  q18_1 à q18_6 y figurent) : il est extrait de l'élément html `q18_intro` du
+  schéma SurveyJS `questionnaire_organismes.json`.
+- Les colonnes `justification`, `gender`, `age`, `education`, `income`,
+  `region`, `language`, `occupation` des exports d'annotation sont **vides à
+  100 %** (0/1615) — écartées du document.
+- Intégrité vérifiée après compilation : les 1 615 marqueurs `#id` sont présents
+  et **les 1 469 verbatims de plus de 12 caractères sont retrouvés intégralement**
+  dans le PDF complet comme dans les 29 PDF unitaires. ⚠️ Piège du contrôle :
+  `pdf_text()` intercale l'**en-tête courant** dans le flux de texte extrait, ce
+  qui coupe artificiellement tout verbatim à cheval sur deux pages (182 faux
+  positifs au premier essai) ; il faut retirer les lignes d'en-tête page par page
+  avant de recoller, et normaliser les ligatures `ﬀ`/`ﬁ`/`ﬂ`.
+
+## Prochaines étapes (mise à jour 2026-07-26)
 
 - Analyse qualitative du volet usagers (section D, entièrement ouverte, + commentaires
   libres des autres sections) une fois le découpage quantitatif/qualitatif fait (même
   logique que `organismes_eta.R`, pas encore répliquée pour usagers).
 - Décider si le point de vigilance sur le sous-groupe `interviewer` nécessite un suivi
   auprès de l'équipe terrain avant la livraison finale du rapport.
+- Exploiter la variable `mode` des annotations : comparer la distribution des
+  `label` internet vs téléphone par question (en se limitant aux questions où
+  l'effectif téléphone le permet), en commençant par les champs "Autre"
+  (q10/q12/q16/q21/q23/q24-Comment) pour statuer sur l'hypothèse d'artefact de
+  codage.

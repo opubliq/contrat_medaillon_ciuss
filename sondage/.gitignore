@@ -6,6 +6,10 @@ rapports/*_files/
 rapports/*.html
 rapports/*.docx
 
+# Intermédiaires LaTeX générés par organismes_verification_annotations.R
+rapports/verification_annotations/**/*.tex
+*.log
+
 # R
 .Rhistory
 .RData
