@@ -272,6 +272,12 @@ par zone (provincial / grand Montréal / local=Hochelaga). Deux tentatives :
 
 ### Taux de réponse local vs global (2026-07-23)
 
+> ⚠️ **Section historique — remplacée par « Taux de réponse par zone territoriale
+> (2026-07-27) » plus bas.** Le calcul ci-dessous reste valide dans sa logique
+> (et sa conclusion est confirmée), mais son dénominateur (la liste `organismes_locaux`)
+> a été remplacé par une classification territoriale de la population invitée
+> complète, et son numérateur mélangeait des canaux de recrutement différents.
+
 Vérification directe : `sondage/listes_organismes/organismes_locaux.csv` (65
 lignes, 58 emails uniques / 59 noms uniques) est la liste d'organismes ajoutée
 spécifiquement pour compléter le scraping 211 avec des organismes locaux
@@ -309,6 +315,131 @@ est assez large pour suggérer un vrai sous-taux de réponse chez les organismes
 spécifiquement locaux — cohérent avec le `0 %` classé "local"/"hochelaga-maisonneuve"
 trouvé via `categorie_territoire` plus haut. Les deux constats se corroborent
 mutuellement, malgré leurs limites individuelles.
+
+## Taux de réponse par zone territoriale (2026-07-27)
+
+Reprise du dossier « taux de réponse par zone de service desservie ». **Correction de
+méthode par rapport aux deux tentatives du 2026-07-23** : un taux de réponse se calcule
+sur la **population invitée**, pas sur les répondants. Il faut donc attribuer la zone au
+**dénominateur** (les 946 organismes invités) et non au numérateur. Les deux tentatives
+précédentes classaient les répondants — ce qui produit une *distribution*, pas un taux.
+
+### Le dénominateur est complet et propre (nouveau)
+
+- Les 7 fichiers `sondage/listes_organismes/*.csv` donnent **946 courriels uniques**
+  (888 issus du scraping 211, 41 exclusifs à `organismes_locaux.csv`, 17 présents dans
+  les deux). Cohérent avec le `n_population_brute = 946` déjà codé en dur dans
+  `rapports/comparaison_internet_telephone.Rmd`.
+- Ces 946 courriels s'apparient à **`liste_organismes/data/02_bottin_territoire.csv`**
+  (colonne `categorie_territoire`) à **946/946 = 100 %**, par jointure exacte sur le
+  courriel normalisé. Aucun appariement flou, aucune perte.
+- ⚠️ **Utiliser le bottin `02`, pas le `04`.** `04_bottin_secteurs.csv` est filtré par
+  secteur d'activité (1 257 lignes contre 2 460) et ne couvre pas toute la population
+  invitée. C'est une des causes du résultat aberrant « 0 % local » obtenu le 2026-07-23
+  dans `scripts/organismes_zone_territoire.R`.
+
+Répartition de la population invitée : provincial 341, grand_montreal 293, montreal 272,
+hochelaga-maisonneuve 23, local 17.
+
+### Le numérateur est le vrai point faible
+
+Sur les 130 répondants, **seuls 85 portent une clé d'identification** (83 courriels
+distincts ; 84 organismes une fois l'appariement par nom ajouté en second recours) :
+
+- **25 entrevues téléphoniques** — `participant_name` / `participant_email` 100 % vides
+  (déjà documenté plus haut).
+- **20 réponses internet issues d'un lien générique** — voir section dédiée ci-dessous.
+
+### Les 20 réponses sans identifiant ne sont PAS des saisies manuelles (vérifié 2026-07-27)
+
+Question posée par l'utilisateur, par analogie avec le signal trouvé sur le sous-groupe
+`interviewer` du volet usagers. **Réponse : non**, le profil est à l'opposé.
+
+⚠️ **Piège de lecture** : la colonne `submitted_at` perd l'heure au chargement (`read_excel`
+ne conserve que la date, tous les horodatages tombent à 00:00). L'horodatage complet est
+dans le **`response_id`** lui-même (format `2026-05-06T18-15-14-472Z`) — c'est de là qu'il
+faut le reconstruire. Un premier examen basé sur `submitted_at` ne montre rien du tout.
+
+Une fois l'heure récupérée (heure de Montréal, UTC-4) :
+
+| | 20 lien générique | 85 invitation |
+|---|---|---|
+| Étalement | 6 mai → 23 juin, 12 jours distincts | 5 mai → 17 juin |
+| Écart médian entre soumissions | **~25 h** | 105 min |
+| Écart minimum | **12,4 min** | 1,4 min |
+| Soumissions à moins de 10 min d'écart | **0** | 7 |
+| Caractères de verbatim (médiane) | **1 230** | 833 |
+| Questions renseignées (médiane, /46) | **28,5** | 26 |
+| q22 (quartiers) rempli | **19/20** | 57/85 |
+
+Aucune rafale, aucune séance de saisie, aucun horaire aberrant. Ce sont au contraire les
+réponses *légitimes* (groupe invitation) qui présentent les écarts très courts — simple
+effet de volume après un envoi de courriel. Et les 20 sont **plus complets et plus
+loquaces** que la moyenne, alors qu'une retranscription de formulaires papier abrège
+plutôt qu'elle n'enrichit. Enfin, toutes les métadonnées d'annuaire (`__token`,
+`Description`, `secteur_activite`, `source_sheet`, `Téléphone`, `Site_web`) sont absentes
+**ensemble** sur ces 20 lignes (0/20 pour chacune) — cohérent avec « n'est jamais passé
+par un lien personnalisé », pas avec une perte technique partielle de jeton.
+
+**Lecture retenue** : le lien du sondage a circulé hors de la liste d'envoi (transfert
+entre collègues, infolettre, relais par un organisme partenaire ou par le CIUSSS). Vrais
+répondants, engagés, mais **hors du cadre d'échantillonnage**.
+
+**Réserve invérifiable** : certains de ces 20 pourraient appartenir à un organisme
+bel et bien invité, dont la personne destinataire a transféré le lien à un collègue. Ils
+seraient alors légitimement dans le dénominateur sans qu'on puisse le détecter.
+
+### Conséquence sur le taux global — à corriger avant livraison
+
+Le **15,0 % actuellement écrit dans `rapports/comparaison_internet_telephone.pdf`
+(128/853) mélange trois canaux de recrutement au numérateur avec un dénominateur qui n'en
+couvre qu'un** (l'invitation courriel). Il surestime le taux.
+
+Taux de réponse à l'invitation courriel, numérateur et dénominateur sur la même base :
+**83 / 853 = 9,7 %**. Les 20 génériques et les 25 entrevues téléphoniques sortent du
+calcul — ce sont deux autres canaux, à décrire séparément.
+
+### Résultat par zone (local et hochelaga-maisonneuve fusionnés, décision 2026-07-27)
+
+Dénominateur = invités classés par zone, **sans retrait des échecs d'envoi** (non
+identifiés nominativement) ; numérateur = répondants appariés par courriel puis par nom.
+
+| Zone | Invités | Répondants | Taux |
+|---|---|---|---|
+| **Est-de-Montréal (local + Hochelaga-Maisonneuve)** | **40** | **1** | **2,5 %** |
+| Montréal (hors Est) | 272 | 27 | 9,9 % |
+| Grand Montréal (banlieues) | 293 | 31 | 10,6 % |
+| Provincial / hors Grand Montréal | 341 | 25 | 7,3 % |
+
+Détail avant fusion : hochelaga-maisonneuve 1/23 = 4,3 %, local 0/17 = 0 %.
+
+**Le sous-taux de réponse des organismes locaux est maintenant confirmé par trois
+méthodes indépendantes** : 3,45 % via la liste `organismes_locaux` (2026-07-23), 0 %
+via le bottin 04 par nom (2026-07-23), 2,5 % via le bottin 02 par courriel sur la
+population invitée (2026-07-27). Constat robuste, malgré les limites propres à chacune.
+
+### Ce qui manque encore (par ordre d'importance)
+
+1. **La liste nominative des 93 échecs d'envoi** (à demander à **Nicolas** — action déjà
+   inscrite dans `notes_rencontre_13juillet.md`). Sans elle, impossible de retirer les
+   bounces zone par zone, donc tous les taux ci-dessus sont des **planchers**. C'est
+   critique pour la zone locale : sur un dénominateur de 40, deux ou trois adresses
+   mortes déplacent sensiblement le 2,5 %.
+2. **Le fichier de suivi des 25 appels téléphoniques** (Hubert / Nicolas), pour rattacher
+   ces entrevues à un nom d'organisme. Hypothèse à valider : les appels auraient ciblé des
+   organismes locaux justement pour compenser leur non-réponse en ligne — auquel cas la
+   couverture réelle du territoire local est bien meilleure que ne le suggère le taux.
+3. Rien à récupérer côté 20 réponses génériques : aucune métadonnée n'existe dans le
+   fichier brut (vérifié). Les traiter comme un canal distinct, documenté comme tel.
+
+### Angle complémentaire, sans dénominateur
+
+`q22` (quartiers desservis) est renseigné pour **101 des 130 répondants**, dont les
+**25 du téléphone** (100 % côté téléphone, 76/105 côté internet), et `q0` (dessert l'Est
+de Montréal) pour les 130. Ça ne produit pas un taux de réponse, mais ça donne la
+**couverture territoriale auto-déclarée de l'échantillon final**, y compris les entrevues
+téléphoniques que le taux de réponse ne peut pas atteindre. Les deux se complètent dans
+un livrable : le taux dit qui a répondu à l'invitation, q22 dit qui l'échantillon couvre.
 
 ## Volet usagers (2026-07-12)
 
@@ -514,7 +645,16 @@ Après correction, `organismes_annotation_mode.R` a été relancé et revalide
   positifs au premier essai) ; il faut retirer les lignes d'en-tête page par page
   avant de recoller, et normaliser les ligatures `ﬀ`/`ﬁ`/`ﬂ`.
 
-## Prochaines étapes (mise à jour 2026-07-26)
+## Prochaines étapes (mise à jour 2026-07-27)
+
+- **Taux de réponse par zone** (voir section dédiée) : relancer le calcul une fois reçue
+  la liste nominative des 93 échecs d'envoi (Nicolas) et le fichier de suivi des 25 appels
+  téléphoniques (Hubert/Nicolas). Aucun script n'est encore versionné pour ce calcul —
+  à écrire au moment de la relance.
+- **Corriger le taux de réponse global dans `comparaison_internet_telephone.Rmd`** : le
+  15,0 % (128/853) mélange trois canaux de recrutement au numérateur avec un dénominateur
+  qui n'en couvre qu'un. Valeur cohérente : 9,7 % (83/853) pour l'invitation courriel,
+  les deux autres canaux décrits séparément.
 
 - Analyse qualitative du volet usagers (section D, entièrement ouverte, + commentaires
   libres des autres sections) une fois le découpage quantitatif/qualitatif fait (même
