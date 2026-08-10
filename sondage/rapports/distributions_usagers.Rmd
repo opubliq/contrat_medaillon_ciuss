@@ -1,6 +1,6 @@
 ---
-title: "Distributions — volet organismes communautaires"
-subtitle: "Variables fermées, internet + téléphone fusionnés"
+title: "Distributions — volet usagers (population)"
+subtitle: "Variables fermées, tous modes de collecte fusionnés"
 output:
   pdf_document:
     latex_engine: pdflatex
@@ -18,13 +18,13 @@ library(purrr)
 library(ggplot2)
 
 data_dir <- "G:/My Drive/_SharedFolder_CUCI-Est-de-Montréal/data"
-dossier_clean <- file.path(data_dir, "organismes/clean")
-combine <- read.csv(file.path(dossier_clean, "organismes_combined.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
-dico    <- read.csv(file.path(dossier_clean, "dictionnaire_variables.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE)
+dossier_clean <- file.path(data_dir, "usagers/clean")
+combine <- read.csv(file.path(dossier_clean, "usagers_combined.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE, na.strings = c("NA", ""))
+dico    <- read.csv(file.path(dossier_clean, "dictionnaire_variables.csv"), fileEncoding = "UTF-8-BOM", stringsAsFactors = FALSE, na.strings = c("NA", ""))
 
 texte_question <- function(code) dico$texte_question[dico$code == code][1]
 
-couleur <- "#2a78d6"
+couleur <- "#1baf7a"
 
 theme_rapport <- function() {
   theme_minimal(base_size = 11) +
@@ -38,20 +38,18 @@ theme_rapport <- function() {
     )
 }
 
+# Même légende de recodage que rapports/comparaison_ligne_personne_usagers.Rmd
 legende <- list(
-  q0    = c("1" = "Oui", "2" = "Non"),
-  q14   = c("1" = "Oui", "2" = "Non"),
-  q15   = c("1" = "Oui", "2" = "Non"),
-  q17   = c("1" = "Oui", "2" = "Non"),
-  q14_1 = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
-  q16   = c("1" = "Oui", "2" = "Non", "9" = "NSP / Autre"),
-  q2    = c("1" = "Jamais", "2" = "Rarement", "3" = "Souvent", "4" = "Très souvent"),
-  q3    = c("4" = "Très grande connaissance", "3" = "Assez grande connaissance",
-            "2" = "Peu de connaissance", "1" = "Pas du tout de connaissance"),
-  q5    = c("4" = "Très respectés", "3" = "Assez respectés",
-            "2" = "Peu respectés", "1" = "Pas du tout respectés"),
-  q11   = c("4" = "Très facile", "3" = "Assez facile",
-            "2" = "Assez difficile", "1" = "Très difficile")
+  q1  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q2  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q3  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q4  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q5  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q7  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q8  = c("1" = "Oui", "2" = "Non", "9" = "Ne sais pas"),
+  q10 = c("1" = "34 ans et -", "2" = "35 à 44 ans", "3" = "45 et 64 ans", "4" = "65 ans et +"),
+  q9  = c("est_montreal" = "Est de Montréal", "grande_region" = "Grande région de Montréal",
+          "ailleurs_ile" = "Ailleurs sur l'île de Montréal", "exterieur_grande_region" = "Extérieur de la grande région")
 )
 
 graphique_radiogroup <- function(code) {
@@ -91,12 +89,11 @@ graphique_checkbox <- function(code) {
     theme_rapport()
 }
 
-codes_radiogroup <- c("q0", "q2", "q3", "q5", "q11", "q14", "q14_1", "q15", "q16", "q17")
-codes_checkbox   <- c("q1", "q10", "q12", "q21", "q22", "q23", "q24")
+codes_radiogroup <- c("q1", "q2", "q3", "q4", "q5", "q7", "q8", "q9", "q10")
+codes_checkbox   <- c("q7_1")
 
 # Ordre naturel du questionnaire (numéro de question), toutes types confondus.
-ordre_questions <- c("q0", "q1", "q2", "q3", "q5", "q10", "q11", "q12",
-                      "q14", "q14_1", "q15", "q16", "q17", "q21", "q22", "q23", "q24")
+ordre_questions <- c("q1", "q2", "q3", "q4", "q5", "q7", "q7_1", "q8", "q9", "q10")
 
 n_repondants <- function(code) sum(!is.na(combine[[code]]))
 ```
@@ -111,8 +108,8 @@ for (code in ordre_questions) {
 
 \newpage
 
-**Longueur des réponses aux questions ouvertes (en mots), par mode de collecte**
+**Longueur des réponses aux questions ouvertes (en mots)**
 
 ```{r fig.width=9.5, fig.height=11, out.width="100%"}
-knitr::include_graphics(file.path(dossier_clean, "distribution_longueur_organismes.png"))
+knitr::include_graphics(file.path(dossier_clean, "distribution_longueur_usagers.png"))
 ```
