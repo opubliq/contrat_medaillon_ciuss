@@ -399,7 +399,30 @@ Taux de réponse à l'invitation courriel, numérateur et dénominateur sur la m
 **83 / 853 = 9,7 %**. Les 20 génériques et les 25 entrevues téléphoniques sortent du
 calcul — ce sont deux autres canaux, à décrire séparément.
 
-### Résultat par zone (local et hochelaga-maisonneuve fusionnés, décision 2026-07-27)
+### Résultat par zone (local et hochelaga-maisonneuve regroupés)
+
+⚠️ **Ce n'est pas une fusion arbitraire de deux zones distinctes.** `hochelaga-maisonneuve`
+et `local` sont **la même zone** (Est-de-Montréal) ; la distinction dans
+`categorie_territoire` est un artefact de la chaîne de classification d'Hubert, pas une
+vraie différence géographique. La colonne `territoire` d'origine vient de deux sources de
+scraping différentes (`liste_organismes/scripts/01_scrape_211.py` et
+`01b_scrape_carteshm.py`) ; la source CartesHM tague littéralement certains organismes
+`"territoire": "Hochelaga-Maisonneuve"` (`01b_scrape_carteshm.py` L50), et
+`02_filtre_territoire.py` (L108-109) préserve ce libellé tel quel comme catégorie séparée
+plutôt que de le regrouper avec `local`. Hubert lui-même les traite déjà comme une seule
+zone ailleurs dans le pipeline : `generate_livrable.py` (L6, L49) fusionne explicitement
+`["local", "hochelaga-maisonneuve"]` sous **« Local »**. Le calcul ci-dessous ne fait donc
+que réaligner le taux de réponse sur cette convention déjà établie.
+
+⚠️ **Table invalidée le 2026-08-10 — voir section « `categorie_territoire` n'est pas la
+localisation physique » plus bas.** Le « 0 % / 2,5 % local » ci-dessous mesure un proxy
+(territoire auto-déclaré) qui s'avère quasi déconnecté de la vraie localisation physique
+des organismes. Ne pas citer ces chiffres sans le caveat de la section dédiée.
+
+⚠️ **Table invalidée le 2026-08-10 — voir section « `categorie_territoire` n'est pas la
+localisation physique » plus bas.** Le « 0 % / 2,5 % local » ci-dessous mesure un proxy
+(territoire auto-déclaré) qui s'avère quasi déconnecté de la vraie localisation physique
+des organismes. Ne pas citer ces chiffres sans le caveat de la section dédiée.
 
 Dénominateur = invités classés par zone, **sans retrait des échecs d'envoi** (non
 identifiés nominativement) ; numérateur = répondants appariés par courriel puis par nom.
@@ -411,7 +434,8 @@ identifiés nominativement) ; numérateur = répondants appariés par courriel p
 | Grand Montréal (banlieues) | 293 | 31 | 10,6 % |
 | Provincial / hors Grand Montréal | 341 | 25 | 7,3 % |
 
-Détail avant fusion : hochelaga-maisonneuve 1/23 = 4,3 %, local 0/17 = 0 %.
+Détail par catégorie brute (avant regroupement) : hochelaga-maisonneuve 1/23 = 4,3 %,
+local 0/17 = 0 %.
 
 **Le sous-taux de réponse des organismes locaux est maintenant confirmé par trois
 méthodes indépendantes** : 3,45 % via la liste `organismes_locaux` (2026-07-23), 0 %
@@ -420,11 +444,11 @@ population invitée (2026-07-27). Constat robuste, malgré les limites propres �
 
 ### Ce qui manque encore (par ordre d'importance)
 
-1. **La liste nominative des 93 échecs d'envoi** (à demander à **Nicolas** — action déjà
-   inscrite dans `notes_rencontre_13juillet.md`). Sans elle, impossible de retirer les
-   bounces zone par zone, donc tous les taux ci-dessus sont des **planchers**. C'est
-   critique pour la zone locale : sur un dénominateur de 40, deux ou trois adresses
-   mortes déplacent sensiblement le 2,5 %.
+1. ~~**La liste nominative des 93 échecs d'envoi**~~ **Reçue et réconciliée le
+   2026-08-10 — voir section dédiée plus bas (45 organismes retenus, pas 93/55/54/48).**
+   Ventilés par zone, taux calculés (voir sections dédiées plus bas).
+   C'était critique pour la zone locale : sur un dénominateur de 40, deux ou trois
+   adresses mortes déplacent sensiblement le 2,5 %.
 2. **Le fichier de suivi des 25 appels téléphoniques** (Hubert / Nicolas), pour rattacher
    ces entrevues à un nom d'organisme. Hypothèse à valider : les appels auraient ciblé des
    organismes locaux justement pour compenser leur non-réponse en ligne — auquel cas la
@@ -440,6 +464,89 @@ de Montréal) pour les 130. Ça ne produit pas un taux de réponse, mais ça don
 **couverture territoriale auto-déclarée de l'échantillon final**, y compris les entrevues
 téléphoniques que le taux de réponse ne peut pas atteindre. Les deux se complètent dans
 un livrable : le taux dit qui a répondu à l'invitation, q22 dit qui l'échantillon couvre.
+
+## ⚠️ `categorie_territoire` n'est pas la localisation physique (2026-08-10)
+
+Remise en question majeure de tout le calcul de taux de réponse par zone ci-dessus,
+déclenchée par une question de l'utilisateur (« est-ce réellement les locaux physiques
+qu'on regarde ? »).
+
+### Le problème de fond
+
+`categorie_territoire` (`liste_organismes/data/02_bottin_territoire.csv`, et par
+extension `04_bottin_secteurs.csv`) est dérivée **uniquement** du champ texte libre
+`territoire` — le « territoire desservi » que l'organisme déclare lui-même sur 211qc.ca
+ou CartesHM — via une correspondance de mots-clés (`02_filtre_territoire.py`, fonction
+`categorize()`). **Le champ `adresse` (localisation physique réelle) n'est jamais utilisé
+dans cette classification**, vérifié en lisant le code : aucune référence à `adresse`
+dans `categorize()`.
+
+Un organisme est classé « local » ou « hochelaga-maisonneuve » ⟺ son texte `territoire`
+contient un des mots-clés de `LOCAL_TERMS`. Rien à voir, en soi, avec où sont ses locaux.
+
+### Preuve empirique — biais dans les deux sens
+
+**Faux positifs (sur-comptage du dénominateur) :** sur les 9 organismes dont le texte
+`territoire` contient « rosemont », 4 ont une adresse physique **hors de l'Est de
+Montréal** : Centre de soir Denise-Massé (Ville-Marie), Alternative Naissance (Villeray),
+Option Consommateurs (Ville-Marie), et **Réseau Accorderie, basé à Québec** — classés
+« local » simplement parce que « Rosemont » apparaît dans une longue liste
+d'arrondissements desservis par un programme spécifique.
+
+**Faux négatifs (sous-comptage du numérateur, plus grave) :** en croisant l'adresse
+réelle des 85 répondants identifiés avec les 10 quartiers CIUSSS-Est, **23/85 (27 %) ont
+leurs locaux physiquement dans l'Est de Montréal** — vérifié ligne par ligne, le nom de
+l'arrondissement apparaît littéralement dans le champ `adresse` (ex. « Rosemont—La
+Petite-Patrie Montréal QC », « Mercier—Hochelaga-Maisonneuve Montréal QC »). Aucun de ces
+23 n'est classé « local »/« hochelaga-maisonneuve » par `categorie_territoire` — ils sont
+éparpillés en montreal (11), grand_montreal (9), provincial (3). Cas ironique : « Oasis
+des enfants de Rosemont », adresse à Rosemont, classé **provincial**.
+
+**Conclusion : le « 0 % à 2,5 % local » de la section précédente ne mesure pas ce qu'on
+pense mesurer.** Le vrai taux de réponse des organismes physiquement dans l'Est de
+Montréal est probablement **beaucoup plus élevé** — au moins 23/85 côté identifiés, sans
+compter les 45 non identifiés (téléphone + lien générique) qu'on ne peut pas encore
+localiser. La « confirmation par trois méthodes indépendantes » de la section précédente
+est invalidée : les trois méthodes utilisaient toutes, directement ou indirectement, le
+même proxy `categorie_territoire`/`territoire` — donc le même biais, pas trois preuves
+indépendantes.
+
+### Liste officielle des 10 quartiers locaux (confirmée avec l'utilisateur, 2026-08-10)
+
+Rivière-des-Prairies, Anjou, Mercier-Est, Pointe-aux-Trembles, Montréal-Est,
+Saint-Léonard, Saint-Michel, Hochelaga, Mercier-Ouest, Rosemont — la même liste que celle
+utilisée dans les deux questionnaires (q22 organismes, q9_1 usagers), vraisemblablement la
+définition officielle du client pour le territoire CIUSSS-Est.
+
+**`LOCAL_TERMS` dans `liste_organismes/scripts/02_filtre_territoire.py` diverge de cette
+liste officielle, sur deux points non documentés/expliqués dans le code :**
+- **Anjou est complètement absent** de `LOCAL_TERMS` : un organisme dont le territoire dit
+  « Anjou » ne sera jamais classé local par ce script.
+- **Montréal-Nord y est inclus**, mais Montréal-Nord relève du CIUSSS **du Nord**-de-
+  l'Île-de-Montréal, pas de l'Est — hors du territoire à mesurer.
+
+### Tension définitionnelle à trancher (soulevée par l'utilisateur)
+
+« Local » peut vouloir dire deux choses distinctes, et un organisme peut être vrai sur une
+seule des deux :
+- **Localisation physique** : siège social/locaux dans un des 10 quartiers de l'Est.
+- **Desserte déclarée** : dessert majoritairement ou exclusivement l'Est de Montréal,
+  peu importe où sont ses locaux (ex. Maison d'hébergement Anjou : locaux à Anjou, mais
+  dessert « Grand Montréal » selon son texte).
+
+**Décision : ne pas trancher entre les deux dans une seule case « local ».** Capturer les
+deux comme variables indépendantes pour chaque organisme (dénominateur ET répondants) :
+1. Adresse dans un des 10 quartiers → oui/non (fiable, dérivable de `adresse`).
+2. Texte `territoire` indique une desserte majoritaire/exclusive de l'Est → oui/non/partiel
+   (jugement d'interprétation sur texte libre, plus flou).
+
+### Prochaine étape
+
+Aucun script versionné pour l'instant — tout ce qui précède vient de vérifications
+manuelles ad hoc (session du 2026-08-10). À écrire : une classification reproductible par
+adresse (les 10 quartiers, sur les 946 invités ET les répondants identifiés), croisée avec
+la classification par desserte déclarée existante, avant de refaire le tableau de taux de
+réponse par zone pour le client.
 
 ## Volet usagers (2026-07-12)
 
@@ -644,6 +751,275 @@ Après correction, `organismes_annotation_mode.R` a été relancé et revalide
   qui coupe artificiellement tout verbatim à cheval sur deux pages (182 faux
   positifs au premier essai) ; il faut retirer les lignes d'en-tête page par page
   avant de recoller, et normaliser les ligatures `ﬀ`/`ﬁ`/`ﬂ`.
+
+## Réconciliation des bounces — de 93 à 45 (2026-08-10)
+
+Nicolas a fourni `sondage/listes_organismes/55_bounces_globaux.csv` en réponse à la
+demande de liste nominative des échecs d'envoi. Ce fichier a déclenché un débat sur le
+bon chiffre à retenir, documenté ici en entier pour ne pas le refaire.
+
+### La chaîne de chiffres, et pourquoi elle bouge
+
+1. **93** — le total d'échecs d'envoi rapporté au départ par Nicolas (oral/global,
+   utilisé jusqu'ici comme `n_echecs_envoi` dans `comparaison_internet_telephone.Rmd`).
+2. **55** — ce que Nicolas annonce comme le nombre d'adresses distinctes une fois les
+   doublons de son suivi retirés (93 − 55 = 38 événements qu'il considère comme des
+   répétitions de la même adresse, mécanisme non détaillé par lui — voir plus bas).
+3. **54** — le compte réel du fichier reçu (`read_lines` : 54 lignes non vides, 54
+   distinctes, aucun doublon interne). Écart de 1 avec le « 55 » annoncé, jamais
+   réconcilié — négligeable, à noter si le chiffre ressort ailleurs.
+4. **46** — sur ces 54, seules 46 adresses correspondent **exactement** à une adresse de
+   nos 7 fichiers d'envoi (`sondage/listes_organismes/*.csv`, la population de 946).
+   Les 8 autres ont été cherchées trois façons (email exact, domaine, nom d'organisme)
+   dans ces 7 fichiers — aucune trace :
+   - `comiteusagers.cuci.cemtl@ssss.gouv.qc.ca` (ressemble à l'adresse du **client**
+     lui-même, pas un organisme invité) et `info@maisoncrossroads.org` : domaine
+     totalement absent de nos 946, sous aucune forme.
+   - `contact@actionr.org`, `coordinator@actionr.org`, `jumelage@actionr.org`,
+     `michaud@actionr.org` : on a bien invité cet organisme (Action Réfugiés Montréal,
+     `organismes_partie_3.csv`), mais à **`info@actionr.org`** — 4 adresses différentes
+     de celle utilisée.
+   - `media@pietons.quebec` : invité à `info@pietons.quebec` (`partie_6`) — différente.
+   - `sousletoitdepal@projetpal.com` : invité à `cap@projetpal.com` (`partie_2`, Logi-P.A.L.) — différente.
+5. **48** — chiffre retenu initialement (**choix conservateur de l'utilisateur,
+   2026-08-10**) : 46 (correspondance exacte — dont `info@actionr.org`, l'adresse
+   réellement invitée, qui bondit elle-même directement, en plus des 4 adresses
+   redirigées ci-dessus) + **2 organismes de plus** (pas 3 : actionr.org était déjà dans
+   les 46), pietons.quebec et projetpal.com, sur la base de l'explication de
+   l'utilisateur : les envois se font depuis le logiciel Opubliq (fait par Hubert),
+   uniquement à partir de nos listes, et les bounces atterrissent dans la boîte de
+   Nicolas — donc une adresse différente qui bondit pour un organisme qu'on a réellement
+   invité est vraisemblablement une redirection interne côté destinataire (`info@` qui
+   redistribue vers d'autres boîtes), pas une adresse à laquelle on aurait envoyé
+   directement. Pour `ssss.gouv.qc.ca` et `maisoncrossroads.org`, aucune redirection ne
+   peut expliquer un bounce pour un domaine qu'on n'a **jamais** contacté — ces 2 restent
+   exclus dans tous les cas.
+6. **45 — chiffre final, corrigé par audit le 2026-08-10.** En croisant les 48 bounces
+   retenus avec la liste des répondants, **3 adresses se sont révélées être à la fois un
+   "bounce" ET une soumission complète au sondage** : `info@aqdr.org`,
+   `info@stellapourlavie.ca`, `je.arsenault@axiaservices.com` (Axia Services — un des
+   organismes physiquement locaux confirmés, voir plus bas). Contradiction logique
+   directe : une adresse dont l'envoi a échoué ne peut pas avoir servi à répondre.
+   Retirées automatiquement (par `setdiff` contre les courriels répondants dans les
+   scripts, pas par une liste codée en dur) plutôt que par hypothèse sur leur origine —
+   contrairement aux cas actionr.org/pietons.quebec/projetpal.com, ici aucune conjecture
+   n'est nécessaire, la preuve (la réponse elle-même) est directement dans nos données.
+
+**n_population_valide = 946 − 45 = 901** (remplace le 853 utilisé jusqu'ici, basé sur
+946 − 93).
+
+### Le principe retenu pour trancher — et sa limite assumée
+
+Question soulevée par l'utilisateur : on a décidé de **ne pas dédoublonner** 2 organismes
+ayant soumis 2 réponses chacun (130 répondants, pas 128 — voir section dédiée plus haut).
+Par cohérence, ne devrait-on pas non plus dédoublonner les 4 adresses bounées
+d'actionr.org ?
+
+**Principe retenu : compter les actions indépendantes, pas leurs artefacts en aval.**
+- Les 2×2 réponses = 4 **actes indépendants** de soumission (4 `response_id` distincts,
+  des horodatages différents, des réponses substantiellement différentes) → 4 comptées.
+- Les 4 bounces d'actionr.org = l'artefact probable d'**un seul envoi** (une seule
+  adresse dans notre liste, un seul acte d'invitation de notre côté) qui se redistribue
+  et échoue en aval → compté comme 1 organisme, pas 4.
+
+**Limite assumée, non vérifiée :** ce raisonnement suppose que le mécanisme est bien une
+redirection côté destinataire, pas des tentatives d'envoi répétées par le logiciel
+Opubliq lui-même (auquel cas ce serait plus proche du cas des réponses, et il faudrait
+compter chaque tentative séparément). Personne n'a confirmé le mécanisme technique exact
+avec Nicolas ou Hubert — **45 reste un choix conservateur pour les 2 organismes
+"redirection" qu'il inclut encore, pas un chiffre entièrement validé.**
+
+### Reste à faire
+
+- Ventilés par zone (fait, voir sections dédiées plus bas) — le dénominateur local (40)
+  « sans retrait des bounces » est maintenant corrigé.
+- Idéalement, faire confirmer par Nicolas le mécanisme des 8 adresses non appariées
+  (redirection vs liste différente) plutôt que de trancher par hypothèse.
+
+## `source_sheet` (catégorisation d'origine Hubert) souffre du même biais que `categorie_territoire` (2026-08-10)
+
+Premier réflexe (erroné) : utiliser `source_sheet` (Local/Montréal/Grand Montréal/
+Provincial, colonne des 7 fichiers d'envoi d'origine — voir section sur la granularité de
+la typologie de départ) pour calculer un taux de réponse par zone, en pensant que
+c'était une alternative fiable à `categorie_territoire` puisque assignée directement par
+Hubert à la construction des listes plutôt que dérivée après coup par mots-clés.
+
+**Résultat obtenu : 1 seul répondant classé "Local" sur 83 identifiés (taux 1,8 %,
+`organismes_taux_reponse_zone_source_sheet.csv`).** Immédiatement suspect : on avait déjà
+établi, en croisant l'adresse physique des répondants au bottin, qu'un nombre bien plus
+grand a réellement ses locaux dans l'Est de Montréal (voir vérification ci-dessous). Un
+seul classé "Local" par `source_sheet` contredit directement ce chiffre.
+
+**Explication probable : `source_sheet` mesure vraisemblablement la même chose que
+`categorie_territoire`** (le territoire auto-déclaré, pas l'adresse), pas une donnée
+indépendante plus fiable. Les totaux des deux corroborent cette lecture — très proches
+sans être identiques (Montréal 271 vs 272, Grand Montréal 284 vs 293, Provincial 333 vs
+341) — cohérent avec deux dérivations différentes d'une même source de biais, pas deux
+mesures indépendantes qui se recouperaient par coïncidence. **Pas confirmé avec Hubert**,
+mais l'hypothèse la plus probable. **Conséquence : ne pas utiliser `source_sheet` pour un
+taux de réponse "local" au sens physique** — utile seulement comme angle "desserte
+déclarée à la Hubert", à comparer au taux par adresse, pas à le remplacer.
+
+### Vérification manuelle des répondants physiquement locaux (2026-08-10)
+
+Reprise de la classification `physiquement_local` (déjà construite pour les 946 invités,
+`scripts/organismes_local_desserte_vs_adresse.R`) appliquée aux 83 répondants identifiés.
+Avant vérification manuelle : 23 répondants physiquement locaux. Deux problèmes trouvés
+et un troisième vérifié :
+
+1. **Contamination Montréal-Nord, corrigée** : « Centre de rêves et espoirs » (12550
+   boulevard Lacordaire, Montréal-Nord) avait été inclus par une version antérieure du
+   script, avant la correction du 2026-08-10 qui exclut explicitement Montréal-Nord
+   (mauvais CIUSSS). Disparaît une fois la version corrigée appliquée aux répondants.
+2. **« Clinique juridique de Saint-Michel »** ajoutée par la règle de nom (org dont le
+   nom référence directement le quartier), pas par la rue (adresse réelle : 3737
+   boulevard Crémazie Est, dans l'arrondissement composé Villeray–Saint-Michel–
+   Parc-Extension). Même règle que les 5 cas retenus côté population — jugée acceptable.
+3. **Rosemont–La Petite-Patrie (10 des 23), vérifié par code postal** (pas de source de
+   frontières officielle disponible, donc heuristique, pas une certitude) : 8/10 ont un
+   code postal H1X/H1Y (Rosemont) — dont un directement sur le boulevard Rosemont
+   (Action main-d'oeuvre) et un nommé « Oasis des enfants de Rosemont ». **2/10 ont un
+   code postal H2S** (Centre d'orientation paralégale et sociale pour immigrants, 435
+   rue Beaubien Est ; Regroupement des aidantes et aidants naturels de Montréal, 5800 rue
+   Saint-Denis) — plus probablement La Petite-Patrie que Rosemont.
+   **Décision de l'utilisateur (2026-08-10) : garder les 8 confirmés Rosemont pour
+   l'instant**, traiter les 2 H2S comme non confirmés/à vérifier plus tard (pas encore
+   tranché s'ils comptent ou non — voir résultats du taux ci-dessous, calculés avec les
+   8 gardés).
+
+**Chiffre retenu pour l'instant : 21 répondants physiquement locaux** (23 − 1 Montréal-Nord
++ 0 net sur Saint-Michel, la clinique remplaçant Montréal-Nord dans le compte − 2 H2S
+non confirmés). La même correction Montréal-Nord/H2S/Saint-Michel a aussi été appliquée
+au dénominateur (946 invités) dans le script final (voir résultats ci-dessous).
+
+### Taux de réponse par adresse physique (2026-08-10)
+
+Script : `scripts/organismes_taux_reponse_zone_adresse.R`, sortie dans
+`organismes_taux_reponse_zone_adresse.csv`. Applique la classification
+`physiquement_local` (avec les raffinements Saint-Michel/Montréal-Nord/Rosemont ci-dessus)
+aux 946 invités (moins les 45 bounces retenus, voir audit ci-dessus) et aux 83 répondants
+identifiés.
+
+| | Population valide | Répondants | Taux |
+|---|---|---|---|
+| **Local (adresse physique)** | 146 | 21 | **14,4 %** |
+| Reste | 755 | 62 | 8,2 % |
+| **Total** | 901 | 83 | 9,2 % |
+
+**Comparaison directe avec `source_sheet` (catégorisation d'origine Hubert)** :
+
+| Méthode | Population valide | Répondants | Taux |
+|---|---|---|---|
+| `source_sheet` (Hubert, déclaratif) | 56 | 1 | 1,8 % |
+| **Adresse physique (vérifiée)** | 146 | 21 | **14,4 %** |
+
+**Renversement complet du narratif.** Avec `categorie_territoire` et `source_sheet` (tous
+deux basés sur le territoire auto-déclaré), la conclusion était que les organismes locaux
+répondaient beaucoup moins que les autres (1,8-2,5 %). Avec l'adresse physique — la
+mesure vérifiée ligne par ligne, pas un proxy déclaratif — **les organismes locaux
+répondent en fait MIEUX que le reste** (14,4 % vs 8,2 %, près du double). La lecture
+"sous-taux de réponse local" présentée plus haut (section "Taux de réponse par zone
+territoriale", "confirmée par trois méthodes indépendantes") est donc elle-même
+invalidée : les trois méthodes utilisaient toutes, directement ou indirectement, un
+territoire auto-déclaré plutôt que la localisation physique — pas trois preuves
+indépendantes d'un même biais, comme déjà noté plus haut pour `categorie_territoire` seul.
+
+### Validation croisée avec q0 (2026-08-10)
+
+`q0` (« Est-ce que votre organisme dessert le territoire de l'Est de l'île de Montréal ? »
+Oui/Non) est demandée directement dans le questionnaire — auto-déclaration de
+l'organisme au moment de répondre, disponible pour les 130 répondants (y compris les 45
+non identifiés, contrairement à `physiquement_local`).
+
+- **Sur les 130 : 80,8 % répondent Oui** (105/130 ; 85,7 % en ligne, 60 % au téléphone).
+- **Croisement avec `physiquement_local` (83 identifiés)** :
+
+  | | q0 = Oui | q0 = Non |
+  |---|---|---|
+  | Physiquement local (n=21) | 20 (95 %) | 1 |
+  | Pas physiquement local (n=62) | 50 (81 %) | 12 |
+
+**Ça valide la classification par adresse** : 95 % des organismes physiquement locaux se
+disent bien desservir le territoire, cohérent. **Mais ça confirme aussi que q0 est un
+très mauvais filtre "local" à lui seul** : même chez les organismes PAS physiquement
+locaux, 81 % répondent quand même Oui — la question posée est un seuil bas (dessert
+l'Est, même en partie, même parmi d'autres territoires plus larges), pas un signal
+d'ancrage local. Ne pas utiliser q0 seul comme proxy de "local".
+
+## Audit général du taux de réponse (2026-08-10)
+
+Passe d'audit demandée par l'utilisateur sur l'ensemble des calculs de taux de réponse
+(volet organismes) après la séquence de corrections ci-dessus. Un bug réel trouvé et
+corrigé partout, un bug cosmétique corrigé, deux scripts réconciliés, deux nuances
+vérifiées et jugées sans impact.
+
+### 🔴 Bug réel : 3 "bounces" avaient pourtant répondu (corrigé)
+
+En croisant les 48 bounces retenus (section "Réconciliation des bounces") avec la liste
+des répondants, **3 adresses étaient à la fois comptées comme bounce ET comme
+répondant** : `info@aqdr.org`, `info@stellapourlavie.ca`,
+`je.arsenault@axiaservices.com` (Axia Services — un des organismes physiquement locaux
+confirmés). Contradiction logique directe : une adresse dont l'envoi a échoué ne peut pas
+avoir servi à répondre (vérifié : les 3 ont soumis une réponse complète les 8, 14 et 28
+mai 2026, par internet, avec nom d'organisme renseigné).
+
+**Corrigé dans les 3 scripts concernés** (`comparaison_internet_telephone.Rmd`,
+`organismes_taux_reponse_zone_source_sheet.R`, `organismes_taux_reponse_zone_adresse.R`)
+par un retrait automatique (`setdiff` des bounces contre les courriels répondants), pas
+une liste codée en dur — pour que ça reste correct si le fichier de bounces change.
+**48 → 45 bounces retenus, `n_population_valide` = 946 − 45 = 901** (plutôt que 898).
+Chiffres finaux mis à jour partout (voir sections "Réconciliation des bounces",
+"`source_sheet`..." et "Taux de réponse par adresse physique" ci-dessus) : l'écart est
+mineur (145→146 organismes locaux valides, 14,5 %→14,4 %), la correction ne change pas
+la conclusion mais retire une incohérence logique qui aurait pu être relevée par le
+client.
+
+### 🟡 Bug cosmétique : commentaire périmé (corrigé)
+
+Un commentaire dans `comparaison_internet_telephone.Rmd` référençait encore l'ancien
+dénominateur « 946/853 » (avant la réconciliation des bounces du 2026-08-10) au lieu du
+nouveau. Mis à jour à « 946/901 ».
+
+### 🟡 Deux scripts de classification adresse divergents (réconciliés)
+
+`organismes_local_desserte_vs_adresse.R` (premier script écrit) n'avait jamais reçu le
+raffinement Rosemont/H2S trouvé après coup (voir section "Vérification manuelle des
+répondants physiquement locaux") — seul `organismes_taux_reponse_zone_adresse.R` (écrit
+après la découverte du problème) l'avait. Résultat avant correction :
+`organismes_local_desserte_vs_adresse.csv` contenait un chiffre "physiquement local"
+gonflé (188) par rapport au chiffre final correct (157 brut, avant retrait des bounces).
+**Corrigé** : même logique Rosemont/H2S (extraction du code postal, exclusion H2S sauf
+signal fort) ajoutée aux deux scripts. Les deux produisent maintenant le même chiffre :
+**157 organismes physiquement locaux (brut, sur 946)**, 35 desservent l'Est selon le
+texte `territoire`, seulement **7** sont les deux à la fois (était 9 avant la correction
+Rosemont/H2S).
+
+### 🟢 Vérifié, pas de problème
+
+- Les 83 répondants identifiés sont tous bel et bien dans la population de 946 (aucune
+  fuite entre les deux jeux de données).
+- La construction des 946 (dédoublonnage de 970 lignes brutes par courriel) est saine :
+  12 courriels partagés par des lignes à "nom différent", mais presque tous sont de
+  simples variantes de formatage du même organisme (majuscules, ordre des mots, nom
+  abrégé vs complet), pas de vraie fusion problématique.
+
+### 🟡 Nuance mineure, non corrigée (impact négligeable)
+
+`info@lescalier.ca` est partagé par « Les Distributions l'Escalier » et « Les
+Habitations l'Escalier de Montréal » — probablement 2 programmes distincts d'un même
+réseau (comme le cas « L'Anonyme » trouvé plus tôt dans le bottin), comptés comme 1 seul
+organisme dans nos 946 à cause du courriel partagé. Effet négligeable sur le taux (au
+plus 946 devient 947) — pas corrigé, jugé non prioritaire.
+
+### Reste non résolu (pas trouvé par cet audit, déjà connu)
+
+- Le mécanisme de redirection pour les 2 organismes restants dans les bounces
+  (pietons.quebec, projetpal.com) n'est toujours pas confirmé avec Nicolas — voir section
+  "Réconciliation des bounces", "Limite assumée, non vérifiée".
+- `scripts/organismes_zone_locale.R` et `organismes_zone_territoire.R` (les tout premiers
+  scripts, basés sur `categorie_territoire`/`04_bottin_secteurs.csv`, invalidés) restent
+  dans le repo sans avertissement en en-tête — risque de confusion si quelqu'un les
+  relance sans lire ce fichier.
 
 ## Prochaines étapes (mise à jour 2026-07-27)
 

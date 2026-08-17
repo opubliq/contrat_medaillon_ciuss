@@ -24,7 +24,7 @@ dico    <- read.csv(file.path(dossier_clean, "dictionnaire_variables.csv"), file
 
 texte_question <- function(code) dico$texte_question[dico$code == code][1]
 
-couleur <- "#1baf7a"
+couleur <- "#4F6396"
 
 theme_rapport <- function() {
   theme_minimal(base_size = 11) +

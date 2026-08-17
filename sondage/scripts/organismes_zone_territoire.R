@@ -109,7 +109,7 @@ ordre <- c("Local — Hochelaga-Maisonneuve", "Local (quartier CIUSSS-Est, hors 
 resume <- resume %>% mutate(categorie_territoire = factor(categorie_territoire, levels = ordre))
 
 g <- ggplot(resume, aes(x = fct_rev(categorie_territoire), y = pct)) +
-  geom_col(fill = "#2a78d6", width = 0.6) +
+  geom_col(fill = "#4F6396", width = 0.6) +
   geom_text(aes(label = paste0(round(pct), " % (n=", n, ")")), hjust = -0.1, size = 3.2) +
   coord_flip(clip = "off") +
   scale_y_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0.25))) +

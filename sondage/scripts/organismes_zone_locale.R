@@ -33,7 +33,7 @@ dossier_clean <- file.path(data_dir, "organismes/clean")
 
 combine <- read_csv(file.path(dossier_clean, "organismes_combined.csv"), show_col_types = FALSE)
 
-couleur_globale <- "#2a78d6"
+couleur_globale <- "#4F6396"
 
 zone_locale <- combine %>%
   transmute(

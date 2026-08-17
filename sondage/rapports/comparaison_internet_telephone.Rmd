@@ -36,18 +36,37 @@ texte_question <- function(code) dico$texte_question[dico$code == code][1]
 # uniques, aucun doublon interne) + organismes_locaux.csv (65 lignes, 58 emails uniques,
 # ajoutés pour compléter le 211 avec des organismes locaux absents du scraping) dédoublonné
 # par email (17 emails de locaux déjà présents dans les parties 1-6) : 905 + (58 - 17) = 946.
-# On retire ensuite les 93 échecs d'envoi (adresses courriel non valides) confirmés lors de
-# l'envoi automatique.
+# On retire ensuite les échecs d'envoi (adresses courriel non valides). Liste nominative
+# reçue de Nicolas (`listes_organismes/55_bounces_globaux.csv`, 54 adresses distinctes) et
+# réconciliée avec nos 946 : 46 correspondent exactement (dont info@actionr.org, qui bondit
+# elle-même directement en plus de 4 adresses redirigées), 2 organismes de plus retenus par
+# choix conservateur (adresse différente mais organisme réellement invité, probable
+# redirection interne côté destinataire), 2 exclues (aucun lien avec nos listes d'envoi,
+# dont une qui ressemble à l'adresse du client) -- 48 à ce stade. Audit du 2026-08-10 :
+# 3 de ces 48 (info@aqdr.org, info@stellapourlavie.ca, je.arsenault@axiaservices.com) ont
+# pourtant soumis une réponse complète -- contradiction logique, retirées -> 45. Mécanisme
+# des bounces non confirmé avec Nicolas - voir PROJECT_MEMORY.md, section "Réconciliation
+# des bounces" (2026-08-10).
 n_population_brute   <- 946
-n_echecs_envoi       <- 93
+n_echecs_envoi       <- 45
 n_population_valide  <- n_population_brute - n_echecs_envoi
 
-# Répondants : 130 soumissions reçues, mais 2 organismes ont soumis deux fois (4 lignes au
-# total, conservées dans organismes_combined.csv pour l'analyse de contenu) -> 128 organismes
-# distincts ont répondu.
-n_repondants <- 128
+# 130 soumissions au total. 2 organismes ont soumis deux fois chacun (4 lignes) ; vérifié
+# colonne par colonne le 2026-07-23 (PROJECT_MEMORY.md) : réponses substantiellement
+# différentes (23-26/48 colonnes diffèrent, q0 diffère même pour l'une des deux paires) ->
+# 4 répondants légitimement distincts, PAS des resoumissions à dédoublonner.
+#
+# Mais la population ciblée (946/901) ne couvre QUE le canal d'invitation courriel. Sur les
+# 130 soumissions, seules 83 sont rattachables à cette population (courriels distincts
+# appariés à la liste d'invitation) ; les 25 entrevues téléphoniques et les 20 réponses via
+# un lien générique (relayé hors liste d'invitation, vérifié 2026-07-27) sont deux autres
+# canaux de recrutement, sans dénominateur comparable -> les mélanger au numérateur contre
+# ce dénominateur surestimerait le taux. Décrits séparément plutôt qu'inclus ici.
+n_repondants_courriel  <- 83
+n_repondants_telephone <- 25
+n_repondants_generique <- 20
 
-taux_reponse <- round(100 * n_repondants / n_population_valide, 1)
+taux_reponse <- round(100 * n_repondants_courriel / n_population_valide, 1)
 
 # Couleurs fixes (mêmes deux couleurs partout dans le document)
 couleur_internet  <- "#2a78d6"
@@ -165,9 +184,18 @@ chaque graphique.
 ### Taux de réponse
 
 Sur une population ciblée de `r n_population_valide` organismes (`r n_population_brute`
-organismes invités, moins `r n_echecs_envoi` échecs d'envoi dus à des adresses courriel
-non valides), `r n_repondants` organismes distincts ont répondu au questionnaire (par
-internet ou par téléphone), soit un **taux de réponse de `r taux_reponse` %**.
+organismes invités par courriel, moins `r n_echecs_envoi` échecs d'envoi dus à des
+adresses courriel non valides), `r n_repondants_courriel` organismes distincts ont
+répondu à l'invitation, soit un **taux de réponse de `r taux_reponse` %**.
+
+Ce taux couvre uniquement le canal d'invitation courriel, seul canal pour lequel on
+dispose d'un dénominateur (la liste d'invitation). Deux autres canaux de recrutement ont
+apporté des réponses supplémentaires, sans dénominateur comparable : `r
+n_repondants_telephone` entrevues menées par téléphone, et `r n_repondants_generique`
+réponses reçues via un lien générique ayant circulé hors de la liste d'invitation
+(transfert, relais par un organisme partenaire — réponses légitimes, mais hors du cadre
+d'échantillonnage). Au total, **`r n_repondants_courriel + n_repondants_telephone +
+n_repondants_generique` organismes** ont répondu au questionnaire tous canaux confondus.
 
 ## Sommaire des différences significatives
 

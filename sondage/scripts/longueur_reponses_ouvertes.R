@@ -20,7 +20,7 @@ library(forcats)
 data_dir <- "G:/My Drive/_SharedFolder_CUCI-Est-de-Montréal/data"
 
 couleur_organismes <- "#2a78d6"
-couleur_usagers     <- "#1baf7a"
+couleur_usagers     <- "#4F6396"
 couleur_entrevue    <- "#e8792a"
 
 theme_distribution <- function() {
